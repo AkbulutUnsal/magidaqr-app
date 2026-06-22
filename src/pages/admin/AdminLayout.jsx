@@ -70,7 +70,7 @@ export default function AdminLayout() {
   const [mini, setMini] = useState(false)
 
   const out = async () => { await signOut(); navigate('/login') }
-  const isSA = profile?.staff_role === 'super_admin'
+  const isSA = profile?.role === 'super_admin'
 
   return (
     <div style={{display:'flex',height:'100vh',background:'#f5f5f3',fontFamily:'Inter,system-ui,sans-serif',fontSize:14}}>
@@ -136,7 +136,7 @@ export default function AdminLayout() {
             {!mini && <>
               <div style={{flex:1,minWidth:0}}>
                 <p style={{fontSize:11,fontWeight:600,color:'#111',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{profile?.full_name||'Admin'}</p>
-                <p style={{fontSize:9,color:'#aaa'}}>{profile?.staff_role}</p>
+                <p style={{fontSize:9,color:'#aaa'}}>{profile?.role}</p>
               </div>
               <button onClick={out} title="Çıkış" style={{background:'none',border:'none',cursor:'pointer',color:'#ccc',padding:2,flexShrink:0}}>
                 <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
