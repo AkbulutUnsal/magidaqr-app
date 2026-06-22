@@ -21,20 +21,23 @@ export default function SuperDashboard() {
   }
 
   async function addTenant() {
-    if (!form.name || !form.email || !form.slug) return setMsg('Tüm alanları doldurun')
+    // Slug'ı name'den otomatik oluştur eğer boşsa
+    const slug = form.slug || form.name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+    
+    if (!form.name || !slug) return setMsg('❌ Firma adı zorunlu')
     setSaving(true); setMsg('')
     try {
-      // 1. Tenant oluştur
+      console.log('Inserting tenant:', { name: form.name, plan: form.plan, slug })
+      
       const { data: tenant, error: te } = await supabase
         .from('tenants')
-        .insert({ name: form.name, plan: form.plan, is_active: true })
+        .insert({ name: form.name, plan: form.plan, slug: slug, is_active: true })
         .select().single()
       if (te) throw te
 
-      // 2. Restoran oluştur
       const { error: re } = await supabase
         .from('restaurants')
-        .insert({ tenant_id: tenant.id, name_en: form.name, name_ka: form.name, slug: form.slug, is_active: true })
+        .insert({ tenant_id: tenant.id, name_en: form.name, name_ka: form.name, slug: slug, is_active: true })
       if (re) throw re
 
       setMsg('✅ Firma başarıyla eklendi!')
@@ -42,7 +45,9 @@ export default function SuperDashboard() {
       setShowAdd(false)
       loadTenants()
     } catch(e) {
+      console.error('addTenant error:', e)
       setMsg('❌ Hata: ' + (e.message || JSON.stringify(e)))
+      // Modal açık kalıyor ki hata görünsün
     }
     setSaving(false)
   }
@@ -75,13 +80,18 @@ export default function SuperDashboard() {
           <div style={{background:'#fff',borderRadius:16,padding:32,width:440,boxShadow:'0 24px 64px rgba(0,0,0,.18)'}}>
             <h2 style={{fontSize:18,fontWeight:800,marginBottom:20}}>Yeni Firma Ekle</h2>
             {[
-              {label:'Firma Adı',    key:'name',  placeholder:'Örn: Aurora Restaurant'},
+              {label:'Firma Adı',    key:'name',  placeholder:'Örn: Aurora Restaurant', onChange: (e) => {
+                const name = e.target.value
+                const autoSlug = name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+                setForm(p=>({...p, name, slug: p.slug || autoSlug}))
+              }},
               {label:'E-posta',      key:'email', placeholder:'admin@firma.com', type:'email'},
               {label:'Slug (URL)',   key:'slug',  placeholder:'aurora-restaurant'},
             ].map(f=>(
               <div key={f.key} style={{marginBottom:14}}>
                 <label style={{fontSize:12,fontWeight:600,color:'#666',display:'block',marginBottom:4}}>{f.label}</label>
-                <input type={f.type||'text'} value={form[f.key]} onChange={e=>setForm(p=>({...p,[f.key]:e.target.value}))}
+                <input type={f.type||'text'} value={form[f.key]} 
+                  onChange={f.onChange || (e=>setForm(p=>({...p,[f.key]:e.target.value}))}
                   placeholder={f.placeholder}
                   style={{width:'100%',padding:'9px 12px',border:'1.5px solid #e8e8e4',borderRadius:8,fontSize:13,outline:'none',fontFamily:'inherit'}}
                   onFocus={e=>e.target.style.borderColor='#1D9E75'} onBlur={e=>e.target.style.borderColor='#e8e8e4'}/>
