@@ -37,14 +37,14 @@ export default function WaiterPanel() {
       .select(`*, tables(table_number, label),
         order_items(*, menu_item:menu_items(name_tr, name_en, name_ka, goes_to_kitchen))`)
       .eq('restaurant_id', rid)
-      .in('order_status', ['pending', 'preparing', 'ready'])
+      .in('status', ['pending', 'preparing', 'ready'])
       .order('created_at', { ascending: true })
 
     // Garsona görünecek siparişler:
     // - "ready" olanlar (mutfaktan çıktı)
     // - içecek içeren pending/preparing (mutfağa gitmeyen ürünler)
     const waiterOrders = (allOrders || []).filter(order => {
-      if (order.order_status === 'ready') return true
+      if (order.status === 'ready') return true
       // pending/preparing ise sadece mutfağa GİTMEYEN ürünü varsa göster
       return order.order_items?.some(oi => oi.menu_item?.goes_to_kitchen === false)
     })
@@ -69,13 +69,13 @@ export default function WaiterPanel() {
   }
 
   async function serveOrder(orderId) {
-    await supabase.from('orders').update({ order_status:'served' }).eq('id', orderId)
+    await supabase.from('orders').update({ status:'served' }).eq('id', orderId)
     loadAll()
   }
 
   // İçecek siparişinde sadece mutfağa gitmeyen ürünleri göster
   const getWaiterItems = (order) => {
-    if (order.order_status === 'ready') return order.order_items // hepsini göster
+    if (order.status === 'ready') return order.order_items // hepsini göster
     return order.order_items?.filter(oi => oi.menu_item?.goes_to_kitchen === false)
   }
 
@@ -233,7 +233,7 @@ export default function WaiterPanel() {
               <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:14}}>
                 {orders.map((order,idx)=>{
                   const items = getWaiterItems(order)
-                  const isReady = order.order_status === 'ready'
+                  const isReady = order.status === 'ready'
                   const isDrinkOnly = order.order_items?.every(oi => oi.menu_item?.goes_to_kitchen === false)
                   return (
                     <div key={order.id}

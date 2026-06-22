@@ -268,8 +268,8 @@ export default function AdminDashboard() {
                 </div>
                 <div style={{textAlign:'right'}}>
                   <p style={{fontSize:12,fontWeight:700,color:'#1D9E75'}}>{o.total_price} ₾</p>
-                  <span style={{fontSize:9,fontWeight:700,color:SC[o.order_status]||'#aaa',background:(SC[o.order_status]||'#aaa')+'18',padding:'1px 7px',borderRadius:20}}>
-                    {SL[o.order_status]||o.order_status}
+                  <span style={{fontSize:9,fontWeight:700,color:SC[o.status]||'#aaa',background:(SC[o.status]||'#aaa')+'18',padding:'1px 7px',borderRadius:20}}>
+                    {SL[o.status]||o.status}
                   </span>
                 </div>
               </div>

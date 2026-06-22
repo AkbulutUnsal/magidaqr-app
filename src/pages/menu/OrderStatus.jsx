@@ -61,9 +61,9 @@ export default function OrderStatus() {
     </div>
   )
 
-  const stepIdx   = STATUS_STEPS.indexOf(order.order_status)
-  const isServed  = order.order_status === 'served'
-  const isCancelled = order.order_status === 'cancelled'
+  const stepIdx   = STATUS_STEPS.indexOf(order.status)
+  const isServed  = order.status === 'served'
+  const isCancelled = order.status === 'cancelled'
   const brand     = restaurant?.brand_color || '#1D9E75'
   const n = (obj, field='name') => obj?.[`${field}_${lang}`] || obj?.[`${field}_en`] || obj?.[`${field}_ka`] || ''
 
@@ -81,11 +81,11 @@ export default function OrderStatus() {
           boxShadow:'0 4px 24px rgba(0,0,0,.08)',animation:'fadeUp .3s ease',textAlign:'center'}}>
 
           {/* Icon */}
-          <div style={{fontSize:52,marginBottom:12,animation:'pop .4s ease'}}>{STATUS_ICONS[order.order_status]}</div>
+          <div style={{fontSize:52,marginBottom:12,animation:'pop .4s ease'}}>{STATUS_ICONS[order.status]}</div>
 
           {/* Status label */}
           <h2 style={{fontSize:22,fontWeight:800,marginBottom:6,color: isServed?brand : isCancelled?'#ef4444':'#111'}}>
-            {STATUS_LABELS[order.order_status]?.[lang] || order.order_status}
+            {STATUS_LABELS[order.status]?.[lang] || order.status}
           </h2>
 
           {order.table && (

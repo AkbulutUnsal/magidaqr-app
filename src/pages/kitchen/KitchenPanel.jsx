@@ -42,7 +42,7 @@ export default function KitchenPanel() {
         order_items(*, menu_item:menu_items(name_tr, name_en, name_ka, goes_to_kitchen))
       `)
       .eq('restaurant_id', profile.restaurant_id)
-      .in('order_status', ['pending', 'confirmed', 'preparing'])
+      .in('status', ['pending', 'confirmed', 'preparing'])
       .order('created_at', { ascending: true })
 
     // Sadece mutfağa giden ürünü olan siparişleri göster
@@ -54,7 +54,7 @@ export default function KitchenPanel() {
   }
 
   async function updateStatus(orderId, status) {
-    await supabase.from('orders').update({ order_status: status }).eq('id', orderId)
+    await supabase.from('orders').update({ status: status }).eq('id', orderId)
     loadOrders()
   }
 
@@ -106,7 +106,7 @@ export default function KitchenPanel() {
               const kitchenItems = order.order_items?.filter(oi => oi.menu_item?.goes_to_kitchen !== false)
               return (
                 <div key={order.id}
-                  style={{background:'#1a1a1a',border:`1px solid ${STATUS_COLOR[order.order_status]||'#333'}`,
+                  style={{background:'#1a1a1a',border:`1px solid ${STATUS_COLOR[order.status]||'#333'}`,
                     borderRadius:16,overflow:'hidden',animation:`fadeIn .3s ease ${idx*.05}s both`}}>
                   
                   {/* Kart header */}
@@ -120,9 +120,9 @@ export default function KitchenPanel() {
                         {formatDistanceToNow(new Date(order.created_at), {addSuffix:true, locale:tr})}
                       </p>
                     </div>
-                    <span style={{fontSize:11,fontWeight:700,color:STATUS_COLOR[order.order_status],
-                      background:STATUS_COLOR[order.order_status]+'22',padding:'4px 12px',borderRadius:20}}>
-                      {STATUS_LABEL[order.order_status]}
+                    <span style={{fontSize:11,fontWeight:700,color:STATUS_COLOR[order.status],
+                      background:STATUS_COLOR[order.status]+'22',padding:'4px 12px',borderRadius:20}}>
+                      {STATUS_LABEL[order.status]}
                     </span>
                   </div>
 
@@ -155,14 +155,14 @@ export default function KitchenPanel() {
                   </div>
 
                   {/* Aksiyon butonu */}
-                  {nextStatus[order.order_status] && (
+                  {nextStatus[order.status] && (
                     <div style={{padding:'0 16px 16px'}}>
-                      <button onClick={() => updateStatus(order.id, nextStatus[order.order_status])}
-                        style={{width:'100%',background: order.order_status==='preparing'?'#1D9E75':'#3b82f6',
+                      <button onClick={() => updateStatus(order.id, nextStatus[order.status])}
+                        style={{width:'100%',background: order.status==='preparing'?'#1D9E75':'#3b82f6',
                           color:'#fff',border:'none',padding:'12px',borderRadius:10,
                           fontSize:14,fontWeight:700,cursor:'pointer',
-                          boxShadow:`0 4px 16px ${order.order_status==='preparing'?'#1D9E75':'#3b82f6'}44`}}>
-                        {nextLabel[order.order_status]}
+                          boxShadow:`0 4px 16px ${order.status==='preparing'?'#1D9E75':'#3b82f6'}44`}}>
+                        {nextLabel[order.status]}
                       </button>
                     </div>
                   )}
