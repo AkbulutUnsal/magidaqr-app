@@ -35,23 +35,12 @@ export default function AdminMenu() {
   }
 
   async function saveItem(formData) {
-    const payload = {
-      ...formData,
-      restaurant_id: profile.restaurant_id,
-      category_id: formData.category_id || null,
-      price: parseFloat(formData.price) || 0,
-      image_url: formData.image_url || null,
-      calories: formData.calories ? parseInt(formData.calories) : null,
-    }
-    let error
+    const payload = { ...formData, restaurant_id: profile.restaurant_id }
     if (editItem?.id) {
-      const res = await supabase.from('menu_items').update(payload).eq('id', editItem.id)
-      error = res.error
+      await supabase.from('menu_items').update(payload).eq('id', editItem.id)
     } else {
-      const res = await supabase.from('menu_items').insert(payload)
-      error = res.error
+      await supabase.from('menu_items').insert(payload)
     }
-    if (error) { alert('Hata: ' + error.message); return }
     setShowForm(false)
     setEditItem(null)
     load()
@@ -88,19 +77,17 @@ export default function AdminMenu() {
                 <tr key={item.id}>
                   <td>
                     <div className="item-name-cell">
-                      {item.image_url
-                        ? <img src={item.image_url} alt="" className="item-thumb" />
-                        : <div style={{ width:36, height:36, borderRadius:6, background:'#f0f0ee', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>🍽️</div>
-                      }
+                      {item.image_url && <img src={item.image_url} alt="" className="item-thumb" />}
                       <span>{item.name_en || item.name_ka}</span>
                     </div>
                   </td>
                   <td>{item.category?.name_en || '—'}</td>
                   <td>{item.price} ₾</td>
                   <td>
-                    <button className={`toggle-btn ${item.is_available?'on':'off'}`} onClick={() => toggleAvailable(item)}>
-                      {item.is_available ? '✅' : '❌'}
-                    </button>
+                    <button
+                      className={`toggle-btn ${item.is_available ? 'on' : 'off'}`}
+                      onClick={() => toggleAvailable(item)}
+                    >{item.is_available ? '✅' : '❌'}</button>
                   </td>
                   <td className="action-cell">
                     <button className="icon-btn" onClick={() => { setEditItem(item); setShowForm(true) }}>✏️</button>
@@ -117,11 +104,10 @@ export default function AdminMenu() {
         <CategoriesTab categories={categories} restaurantId={profile?.restaurant_id} onRefresh={load} t={t} />
       )}
 
-      {showForm && categories.length > 0 && (
+      {showForm && (
         <ItemFormModal
           item={editItem}
           categories={categories}
-          restaurantId={profile?.restaurant_id}
           onSave={saveItem}
           onClose={() => { setShowForm(false); setEditItem(null) }}
           t={t}
@@ -136,19 +122,12 @@ function CategoriesTab({ categories, restaurantId, onRefresh, t }) {
 
   async function addCat() {
     if (!name.en) return
-    const { error } = await supabase.from('menu_categories').insert({
+    await supabase.from('menu_categories').insert({
       restaurant_id: restaurantId,
       name_ka: name.ka, name_en: name.en, name_tr: name.tr, name_ru: name.ru,
       sort_order: categories.length
     })
-    if (error) { alert('Hata: ' + error.message); return }
     setName({ ka:'', en:'', tr:'', ru:'' })
-    onRefresh()
-  }
-
-  async function deleteCat(id) {
-    if (!confirm('Kategoriyi sil? İçindeki ürünler kategorisiz kalır.')) return
-    await supabase.from('menu_categories').delete().eq('id', id)
     onRefresh()
   }
 
@@ -163,12 +142,9 @@ function CategoriesTab({ categories, restaurantId, onRefresh, t }) {
       </div>
       <ul className="cat-list">
         {categories.map(cat => (
-          <li key={cat.id} className="cat-row" style={{ justifyContent:'space-between' }}>
-            <div style={{ display:'flex', gap:16 }}>
-              <span>{cat.name_en}</span>
-              <span className="cat-ka">{cat.name_ka}</span>
-            </div>
-            <button className="icon-btn danger" onClick={() => deleteCat(cat.id)}>🗑️</button>
+          <li key={cat.id} className="cat-row">
+            <span>{cat.name_en}</span>
+            <span className="cat-ka">{cat.name_ka}</span>
           </li>
         ))}
       </ul>
@@ -176,62 +152,26 @@ function CategoriesTab({ categories, restaurantId, onRefresh, t }) {
   )
 }
 
-function ItemFormModal({ item, categories, restaurantId, onSave, onClose, t }) {
+function ItemFormModal({ item, categories, onSave, onClose, t }) {
   const [form, setForm] = useState({
     name_ka: item?.name_ka || '', name_en: item?.name_en || '',
     name_tr: item?.name_tr || '', name_ru: item?.name_ru || '',
-    description_ka: item?.description_ka || '', description_en: item?.description_en || '',
-    description_tr: item?.description_tr || '', description_ru: item?.description_ru || '',
+    description_en: item?.description_en || '',
     price: item?.price || '', category_id: item?.category_id || '',
-    image_url: item?.image_url || '', calories: item?.calories || '',
-    is_available: item?.is_available ?? true, is_featured: item?.is_featured ?? false
+    image_url: item?.image_url || '', is_available: item?.is_available ?? true,
+    is_featured: item?.is_featured ?? false, goes_to_kitchen: item?.goes_to_kitchen ?? true
   })
-  const [uploading, setUploading] = useState(false)
 
   const set = (k, v) => setForm(p => ({...p, [k]: v}))
 
-  async function uploadImage(file) {
-    setUploading(true)
-    const ext = file.name.split('.').pop()
-    const path = `${restaurantId}/items/${Date.now()}.${ext}`
-    const { error } = await supabase.storage.from('menu-images').upload(path, file, { upsert: true })
-    if (error) { alert('Yükleme hatası: ' + error.message); setUploading(false); return }
-    const { data: { publicUrl } } = supabase.storage.from('menu-images').getPublicUrl(path)
-    set('image_url', publicUrl)
-    setUploading(false)
-  }
-
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{ width:600 }} onClick={e => e.stopPropagation()}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h3>{item ? 'Ürünü düzenle' : t('add_item')}</h3>
           <button onClick={onClose}>✕</button>
         </div>
         <div className="modal-body">
-
-          {/* Görsel */}
-          <div style={{ display:'flex', gap:16, marginBottom:16, alignItems:'flex-start' }}>
-            <div style={{ width:100, height:100, borderRadius:12, background:'#f0f0ee', overflow:'hidden', flexShrink:0, border:'1px solid #eee' }}>
-              {form.image_url
-                ? <img src={form.image_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-                : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:36 }}>🍽️</div>
-              }
-            </div>
-            <div style={{ flex:1 }}>
-              <label className="upload-label" style={{ marginBottom:8 }}>
-                {uploading ? '⏳ Yükleniyor...' : '📁 Görsel yükle'}
-                <input type="file" accept="image/*" style={{ display:'none' }}
-                  onChange={e => e.target.files[0] && uploadImage(e.target.files[0])} />
-              </label>
-              <div className="form-group">
-                <label>veya görsel URL</label>
-                <input value={form.image_url} onChange={e => set('image_url', e.target.value)} placeholder="https://..." />
-              </div>
-            </div>
-          </div>
-
-          {/* İsimler */}
           <div className="form-row">
             {['ka','en','tr','ru'].map(l => (
               <div key={l} className="form-group">
@@ -240,39 +180,31 @@ function ItemFormModal({ item, categories, restaurantId, onSave, onClose, t }) {
               </div>
             ))}
           </div>
-
-          {/* Açıklamalar */}
-          <div className="form-row">
-            {['ka','en','tr','ru'].map(l => (
-              <div key={l} className="form-group">
-                <label>Açıklama ({l.toUpperCase()})</label>
-                <textarea value={form[`description_${l}`]} onChange={e => set(`description_${l}`, e.target.value)} rows={2} />
-              </div>
-            ))}
+          <div className="form-group">
+            <label>Açıklama (EN)</label>
+            <textarea value={form.description_en} onChange={e => set('description_en', e.target.value)} rows={2} />
           </div>
-
           <div className="form-row-2">
             <div className="form-group">
               <label>{t('price')} (₾)</label>
               <input type="number" step="0.01" value={form.price} onChange={e => set('price', e.target.value)} />
             </div>
             <div className="form-group">
-              <label>Kalori (kcal)</label>
-              <input type="number" value={form.calories} onChange={e => set('calories', e.target.value)} placeholder="350" />
+              <label>{t('categories')}</label>
+              <select value={form.category_id} onChange={e => set('category_id', e.target.value)}>
+                <option value="">— Kategori seç —</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name_en}</option>)}
+              </select>
             </div>
           </div>
-
           <div className="form-group">
-            <label>{t('categories')}</label>
-            <select value={form.category_id} onChange={e => set('category_id', e.target.value)}>
-              <option value="">— Kategori seç —</option>
-              {categories.map(c => <option key={c.id} value={c.id}>{c.name_en}</option>)}
-            </select>
+            <label>Görsel URL</label>
+            <input value={form.image_url} onChange={e => set('image_url', e.target.value)} />
           </div>
-
           <div className="form-checks">
             <label><input type="checkbox" checked={form.is_available} onChange={e => set('is_available', e.target.checked)} /> Mevcut</label>
             <label><input type="checkbox" checked={form.is_featured} onChange={e => set('is_featured', e.target.checked)} /> Öne çıkan</label>
+            <label><input type="checkbox" checked={form.goes_to_kitchen} onChange={e => set('goes_to_kitchen', e.target.checked)} /> 🍳 Mutfağa gider (içecekler için kaldırın)</label>
           </div>
         </div>
         <div className="modal-footer">
