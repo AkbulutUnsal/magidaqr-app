@@ -1,0 +1,30 @@
+{
+  "name": "magidaqr-app",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.0",
+    "react-i18next": "^15.0.0",
+    "i18next": "^23.11.0",
+    "i18next-browser-languagedetector": "^8.0.0",
+    "qrcode.react": "^4.0.1",
+    "lucide-react": "^0.447.0",
+    "recharts": "^2.13.0",
+    "date-fns": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.2"
+  }
+}

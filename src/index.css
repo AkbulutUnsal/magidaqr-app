@@ -1,0 +1,260 @@
+/* ── Reset ───────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+body { font-family: system-ui, -apple-system, sans-serif; font-size: 15px; color: #1a1a1a; background: #f8f8f6 }
+
+/* ── Brand tokens ─────────────────────────────────── */
+:root {
+  --brand: #1D9E75;
+  --brand-dark: #0F6E56;
+  --brand-light: #E1F5EE;
+  --danger: #E24B4A;
+  --warning: #BA7517;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+
+/* ── Shared utilities ─────────────────────────────── */
+.page-loading { display: flex; align-items: center; justify-content: center; height: 100vh; font-size: 14px; color: #888 }
+.btn-primary { background: var(--brand); color: #fff; border: none; padding: 9px 18px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer }
+.btn-primary:hover { background: var(--brand-dark) }
+.btn-full { width: 100% }
+.sign-out-btn { background: transparent; border: 1px solid rgba(255,255,255,0.3); padding: 6px 14px; border-radius: var(--radius-sm); font-size: 13px; cursor: pointer; color: #fff; font-weight: 600 }
+.icon-btn { background: transparent; border: none; cursor: pointer; font-size: 16px; padding: 4px 6px; border-radius: 4px }
+.icon-btn:hover { background: #f0f0f0 }
+.icon-btn.danger:hover { background: #fee }
+.empty-state { text-align: center; padding: 60px 20px; color: #888; font-size: 18px }
+.error-msg { color: var(--danger); font-size: 13px; margin-top: 8px }
+
+/* ── Login ────────────────────────────────────────── */
+.login-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #f4f4f2 }
+.login-card { background: #fff; border-radius: var(--radius); border: 1px solid #e8e8e6; padding: 36px; width: 360px }
+.login-logo { text-align: center; margin-bottom: 28px }
+.logo-qr { font-size: 26px; letter-spacing: -0.5px; color: #111 }
+.logo-qr b { color: var(--brand) }
+.login-form .form-group { margin-bottom: 16px }
+.login-form label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: #444 }
+.login-form input { width: 100%; border: 1px solid #ddd; border-radius: var(--radius-sm); padding: 9px 12px; font-size: 14px; outline: none }
+.login-form input:focus { border-color: var(--brand) }
+
+/* ── Admin layout ─────────────────────────────────── */
+.admin-layout { display: flex; min-height: 100vh }
+.admin-sidebar { width: 220px; background: #fff; border-right: 1px solid #e8e8e6; display: flex; flex-direction: column; flex-shrink: 0 }
+.admin-logo { padding: 20px 20px 16px; border-bottom: 1px solid #f0f0ee }
+.admin-nav { flex: 1; padding: 12px 0 }
+.admin-nav-link { display: flex; align-items: center; gap: 10px; padding: 10px 20px; font-size: 14px; color: #555; text-decoration: none; transition: background 0.15s }
+.admin-nav-link:hover { background: #f6f6f4 }
+.admin-nav-link.active { background: var(--brand-light); color: var(--brand-dark); font-weight: 500 }
+.nav-icon { font-size: 18px }
+.admin-sidebar-footer { padding: 16px 20px; border-top: 1px solid #f0f0ee }
+.admin-user { display: flex; align-items: center; gap: 10px; margin-bottom: 12px }
+.user-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--brand-light); color: var(--brand-dark); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px }
+.user-name { font-size: 13px; font-weight: 500 }
+.user-role { font-size: 11px; color: #888 }
+.sidebar-signout { width: 100%; background: transparent; border: 1px solid #e0e0e0; padding: 7px; border-radius: var(--radius-sm); font-size: 13px; cursor: pointer; color: #666 }
+.admin-main { flex: 1; background: #f8f8f6; overflow-y: auto }
+.admin-page { padding: 28px 32px; max-width: 1100px }
+.page-title { font-size: 22px; font-weight: 600; margin-bottom: 24px }
+.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px }
+.section-title { font-size: 15px; font-weight: 600; margin-bottom: 14px; color: #333 }
+
+/* ── KPI cards ────────────────────────────────────── */
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 28px }
+.kpi-card { background: #fff; border: 1px solid #e8e8e6; border-radius: var(--radius); padding: 18px 20px }
+.kpi-label { font-size: 12px; color: #888; margin-bottom: 6px }
+.kpi-value { font-size: 26px; font-weight: 600; color: var(--brand) }
+.kpi-sub { font-size: 11px; color: #aaa; margin-top: 3px }
+
+/* ── Dashboard ────────────────────────────────────── */
+.dashboard-chart { background: #fff; border: 1px solid #e8e8e6; border-radius: var(--radius); padding: 20px; margin-bottom: 24px }
+.live-orders-section { background: #fff; border: 1px solid #e8e8e6; border-radius: var(--radius); padding: 20px }
+.live-order-row { display: flex; align-items: center; gap: 16px; padding: 10px 0; border-bottom: 1px solid #f0f0ee; font-size: 14px }
+.live-order-row:last-child { border-bottom: none }
+.lo-num { font-weight: 600; width: 60px }
+.lo-table { flex: 1; color: #555 }
+.lo-price { font-weight: 500; color: var(--brand) }
+.empty-text { color: #aaa; font-size: 14px; text-align: center; padding: 20px }
+
+/* ── Status badges ────────────────────────────────── */
+.status-pending   { color: #E24B4A; font-weight: 500 }
+.status-confirmed { color: #BA7517; font-weight: 500 }
+.status-preparing { color: #534AB7; font-weight: 500 }
+.status-ready     { color: var(--brand); font-weight: 500 }
+.status-served    { color: #888 }
+
+/* ── Admin table ──────────────────────────────────── */
+.menu-table-wrap { background: #fff; border: 1px solid #e8e8e6; border-radius: var(--radius); overflow: hidden }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 14px }
+.admin-table th { text-align: left; padding: 12px 16px; font-size: 12px; font-weight: 600; color: #888; border-bottom: 1px solid #f0f0ee; background: #fafaf8 }
+.admin-table td { padding: 12px 16px; border-bottom: 1px solid #f4f4f2 }
+.admin-table tr:last-child td { border-bottom: none }
+.item-name-cell { display: flex; align-items: center; gap: 10px }
+.item-thumb { width: 36px; height: 36px; border-radius: 6px; object-fit: cover }
+.toggle-btn { background: transparent; border: none; font-size: 16px; cursor: pointer }
+.action-cell { display: flex; gap: 6px }
+.tab-bar { display: flex; gap: 2px; margin-bottom: 20px; background: #f0f0ee; border-radius: var(--radius-sm); padding: 3px; width: fit-content }
+.tab { padding: 7px 18px; border: none; background: transparent; border-radius: var(--radius-sm); font-size: 13px; cursor: pointer; color: #666 }
+.tab.active { background: #fff; color: #111; font-weight: 500 }
+
+/* ── Category management ──────────────────────────── */
+.cats-section { background: #fff; border: 1px solid #e8e8e6; border-radius: var(--radius); padding: 20px }
+.cat-add-form { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px }
+.cat-input { border: 1px solid #ddd; border-radius: var(--radius-sm); padding: 8px 12px; font-size: 13px; width: 140px }
+.cat-list { list-style: none }
+.cat-row { display: flex; gap: 16px; padding: 8px 0; border-bottom: 1px solid #f4f4f2; font-size: 14px }
+.cat-ka { color: #888 }
+
+/* ── Tables grid ──────────────────────────────────── */
+.table-add-form { display: flex; gap: 10px; margin-bottom: 24px }
+.table-add-form input { border: 1px solid #ddd; border-radius: var(--radius-sm); padding: 9px 14px; font-size: 14px; width: 260px }
+.tables-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px }
+.table-card { background: #fff; border: 1px solid #e8e8e6; border-radius: var(--radius); padding: 16px; text-align: center }
+.tc-num { font-size: 32px; font-weight: 700; color: var(--brand); line-height: 1 }
+.tc-label { font-size: 13px; color: #555; margin: 6px 0 4px }
+.tc-url { font-size: 10px; color: #bbb; margin-bottom: 12px; word-break: break-all }
+.tc-actions { display: flex; justify-content: center; gap: 8px }
+
+/* ── QR modal ─────────────────────────────────────── */
+.qr-modal { text-align: center }
+.qr-body { padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 14px }
+.qr-url { font-size: 11px; color: #888; word-break: break-all; max-width: 260px }
+
+/* ── Reports ──────────────────────────────────────── */
+.report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px }
+.report-card { background: #fff; border: 1px solid #e8e8e6; border-radius: var(--radius); padding: 20px }
+.report-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 16px; color: #333 }
+
+/* ── Settings ─────────────────────────────────────── */
+.settings-card { background: #fff; border: 1px solid #e8e8e6; border-radius: var(--radius); padding: 24px; max-width: 400px }
+.settings-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 16px }
+.settings-form { display: flex; gap: 10px }
+.settings-form input { flex: 1; border: 1px solid #ddd; border-radius: var(--radius-sm); padding: 9px 12px; font-size: 14px }
+.settings-msg { font-size: 13px; color: var(--brand); margin-top: 10px }
+
+/* ── Modal ────────────────────────────────────────── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100 }
+.modal { background: #fff; border-radius: var(--radius); width: 520px; max-width: 95vw; max-height: 90vh; overflow-y: auto }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid #f0f0ee }
+.modal-header h3 { font-size: 16px; font-weight: 600 }
+.modal-header button { background: transparent; border: none; font-size: 18px; cursor: pointer; color: #888 }
+.modal-body { padding: 20px 24px }
+.modal-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 24px; border-top: 1px solid #f0f0ee }
+.form-group { margin-bottom: 14px }
+.form-group label { display: block; font-size: 12px; font-weight: 500; color: #555; margin-bottom: 5px }
+.form-group input, .form-group select, .form-group textarea { width: 100%; border: 1px solid #ddd; border-radius: var(--radius-sm); padding: 8px 12px; font-size: 14px }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px }
+.form-checks { display: flex; gap: 20px; font-size: 14px }
+.form-checks label { display: flex; align-items: center; gap: 6px; cursor: pointer }
+
+/* ── Kitchen ──────────────────────────────────────── */
+.kitchen-page { background: #111; min-height: 100vh; color: #fff }
+.kitchen-header { display: flex; align-items: center; gap: 16px; padding: 16px 24px; border-bottom: 1px solid #222; background: #1a1a1a }
+.kitchen-header h1 { font-size: 20px; font-weight: 600; flex: 1 }
+.kitchen-count { background: #1D9E75; color: #fff; padding: 4px 14px; border-radius: 20px; font-size: 13px; font-weight: 600 }
+.kitchen-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; padding: 20px 24px }
+.kitchen-card { background: #1e1e1e; border-radius: var(--radius); border: 1px solid #2a2a2a; overflow: hidden }
+.kitchen-card-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 8px }
+.kcard-table { font-size: 15px; font-weight: 600 }
+.kcard-status { font-size: 11px; padding: 3px 10px; border-radius: 20px; background: #2a2a2a }
+.kcard-time { font-size: 11px; color: #666; padding: 0 16px 10px }
+.kcard-items { list-style: none; padding: 0 16px; margin-bottom: 8px }
+.kcard-items li { display: flex; align-items: baseline; gap: 8px; padding: 5px 0; border-bottom: 1px solid #2a2a2a; font-size: 14px }
+.kcard-items li:last-child { border-bottom: none }
+.kitem-qty { color: var(--brand); font-weight: 700; font-size: 16px; min-width: 20px }
+.kitem-name { flex: 1 }
+.kitem-note { font-size: 11px; color: #888 }
+.kcard-note { background: #2a2a2a; margin: 0 16px 12px; padding: 8px 10px; border-radius: 6px; font-size: 12px; color: #bbb }
+.kcard-footer { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-top: 1px solid #2a2a2a }
+.kcard-num { font-size: 12px; color: #666 }
+.kcard-action-btn { background: var(--brand); color: #fff; border: none; padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer }
+.kcard-action-btn:hover { background: var(--brand-dark) }
+
+/* ── Waiter ───────────────────────────────────────── */
+.waiter-page { min-height: 100vh; background: #f0f9f6 }
+.waiter-header { display: flex; align-items: center; gap: 16px; padding: 16px 24px; background: #fff; border-bottom: 1px solid #e0f0ea }
+.waiter-header h1 { flex: 1; font-size: 20px; font-weight: 600 }
+.waiter-count { background: var(--brand-light); color: var(--brand-dark); padding: 4px 14px; border-radius: 20px; font-size: 13px; font-weight: 600 }
+.waiter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; padding: 20px 24px }
+.waiter-card { background: #fff; border: 2px solid var(--brand); border-radius: var(--radius); padding: 16px }
+.wcard-table { font-size: 18px; font-weight: 700; color: var(--brand-dark); margin-bottom: 4px }
+.wcard-label { font-size: 14px; font-weight: 400; color: #888 }
+.wcard-num { font-size: 12px; color: #aaa; margin-bottom: 4px }
+.wcard-time { font-size: 12px; color: #888; margin-bottom: 12px }
+.wcard-items { list-style: none; margin-bottom: 14px }
+.wcard-items li { font-size: 13px; padding: 3px 0; color: #444; border-bottom: 1px dashed #f0f0ee }
+.wcard-serve-btn { width: 100%; background: var(--brand); color: #fff; border: none; padding: 10px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer }
+
+/* ── Menu (müşteri) ───────────────────────────────── */
+.menu-page { max-width: 600px; margin: 0 auto; background: #fff; min-height: 100vh }
+.menu-header { background: #fff; border-bottom: 1px solid #f0f0ee; position: sticky; top: 0; z-index: 10 }
+.menu-header-inner { display: flex; align-items: center; gap: 12px; padding: 14px 16px }
+.rest-logo { width: 40px; height: 40px; border-radius: 8px; object-fit: cover }
+.rest-name { font-size: 16px; font-weight: 600 }
+.table-label { font-size: 12px; color: #888 }
+.search-bar { padding: 12px 16px }
+.search-input { width: 100%; border: 1px solid #e8e8e6; border-radius: 30px; padding: 10px 16px; font-size: 14px; outline: none }
+.search-input:focus { border-color: var(--brand) }
+.category-tabs { display: flex; gap: 8px; padding: 0 16px 14px; overflow-x: auto }
+.cat-tab { white-space: nowrap; padding: 7px 16px; border: 1px solid #e0e0e0; border-radius: 20px; font-size: 13px; background: transparent; cursor: pointer; color: #555 }
+.cat-tab.active { background: var(--brand); color: #fff; border-color: var(--brand) }
+.menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 16px 100px }
+.menu-card { border: 1px solid #f0f0ee; border-radius: var(--radius); overflow: hidden; position: relative }
+.menu-card:hover { border-color: #ddd }
+.item-img { width: 100%; height: 120px; object-fit: cover }
+.featured-badge { position: absolute; top: 8px; left: 8px; background: var(--brand); color: #fff; font-size: 10px; padding: 2px 8px; border-radius: 20px }
+.item-body { padding: 10px 12px }
+.item-name { font-size: 13px; font-weight: 600; margin-bottom: 4px }
+.item-desc { font-size: 11px; color: #888; margin-bottom: 8px; line-height: 1.4 }
+.item-footer { display: flex; align-items: center; justify-content: space-between }
+.item-price { font-size: 14px; font-weight: 600; color: var(--brand) }
+.add-btn { width: 30px; height: 30px; border-radius: 50%; background: var(--brand); color: #fff; border: none; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1 }
+.cart-fab { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--brand); color: #fff; border: none; padding: 14px 28px; border-radius: 30px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 16px rgba(29,158,117,0.35); white-space: nowrap; z-index: 50 }
+
+/* ── Cart drawer ──────────────────────────────────── */
+.cart-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 60 }
+.cart-drawer { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-radius: 20px 20px 0 0; max-height: 80vh; overflow-y: auto; display: flex; flex-direction: column }
+.cart-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #f0f0ee }
+.cart-header h2 { font-size: 16px; font-weight: 600 }
+.close-btn { background: transparent; border: none; font-size: 18px; cursor: pointer; color: #888; padding: 4px }
+.cart-items { flex: 1; padding: 12px 20px; overflow-y: auto }
+.cart-item-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f4f4f2 }
+.ci-info { flex: 1 }
+.ci-name { display: block; font-size: 14px; font-weight: 500; margin-bottom: 2px }
+.ci-price { font-size: 13px; color: var(--brand); font-weight: 500 }
+.ci-qty { display: flex; align-items: center; gap: 10px }
+.ci-qty button { width: 28px; height: 28px; border-radius: 50%; background: #f4f4f2; border: none; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1 }
+.ci-qty span { font-size: 15px; font-weight: 600; min-width: 16px; text-align: center }
+.cart-note { margin: 12px 20px; border: 1px solid #e8e8e6; border-radius: var(--radius-sm); padding: 10px; font-size: 14px; resize: none; outline: none; width: calc(100% - 40px) }
+.cart-footer { padding: 12px 20px 24px }
+.cart-total { display: flex; justify-content: space-between; font-size: 16px; font-weight: 600; margin-bottom: 12px }
+
+/* ── Order status ─────────────────────────────────── */
+.order-status-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; background: #f8f8f6 }
+.order-status-card { background: #fff; border: 1px solid #e8e8e6; border-radius: var(--radius); padding: 32px 24px; width: 100%; max-width: 400px; text-align: center }
+.order-icon { font-size: 48px; margin-bottom: 12px }
+.order-status-card h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px }
+.order-num { font-size: 14px; color: #888; margin-bottom: 24px }
+.progress-track { display: flex; justify-content: space-between; margin-bottom: 24px; position: relative }
+.progress-track::before { content: ''; position: absolute; top: 10px; left: 0; right: 0; height: 2px; background: #f0f0ee; z-index: 0 }
+.progress-step { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; position: relative; z-index: 1 }
+.step-dot { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #e0e0e0; background: #fff; transition: all 0.3s }
+.progress-step.done .step-dot { background: var(--brand); border-color: var(--brand) }
+.progress-step span { font-size: 10px; color: #aaa; text-align: center }
+.progress-step.done span { color: var(--brand-dark); font-weight: 500 }
+.order-items-list { text-align: left; border-top: 1px solid #f0f0ee; padding-top: 16px }
+.order-item-row { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; color: #444 }
+.order-item-row.total { font-weight: 700; font-size: 15px; color: #111; border-top: 1px solid #e8e8e6; padding-top: 10px; margin-top: 4px }
+
+/* ── Lang switcher ────────────────────────────────── */
+.lang-switcher { display: flex; gap: 3px; margin-left: auto }
+.lang-btn { padding: 4px 8px; border-radius: 4px; border: 1px solid #e0e0e0; background: transparent; font-size: 11px; cursor: pointer; color: #666 }
+.lang-btn.active { background: var(--brand); color: #fff; border-color: var(--brand) }
+
+/* ── Responsive ───────────────────────────────────── */
+@media (max-width: 640px) {
+  .admin-layout { flex-direction: column }
+  .admin-sidebar { width: 100%; flex-direction: row; overflow-x: auto }
+  .menu-grid { grid-template-columns: 1fr }
+  .kpi-grid { grid-template-columns: 1fr 1fr }
+  .form-row, .form-row-2 { grid-template-columns: 1fr }
+}
