@@ -96,10 +96,15 @@ export default function MenuPage() {
   }
 
   const sendCall = async (type) => {
-    if (!restaurant || !tableId) return
-    await supabase.from('table_calls').insert({ restaurant_id: restaurant.id, table_id: tableId, type })
-    setCallSent(type)
-    setTimeout(() => setCallSent(null), 4000)
+    if (!restaurant || !tableId || callSent) return
+    setCallSent(type) // önce state'i set et, çift tıklamayı engelle
+    await supabase.from('table_calls').insert({ 
+      restaurant_id: restaurant.id, 
+      table_id: tableId, 
+      type,
+      call_status: 'pending'
+    })
+    setTimeout(() => setCallSent(null), 5000)
   }
 
   const selectCategory = (id) => {
