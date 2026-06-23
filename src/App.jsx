@@ -13,6 +13,11 @@ import AdminReports   from './pages/admin/AdminReports'
 import AdminSettings  from './pages/admin/AdminSettings'
 import AdminQR       from './pages/admin/AdminQR'
 import AdminStaff     from './pages/admin/AdminStaff'
+import AdminAllergens from './pages/admin/AdminAllergens'
+import AdminCampaigns from './pages/admin/AdminCampaigns'
+import AdminInfoPages from './pages/admin/AdminInfoPages'
+import AdminSocial    from './pages/admin/AdminSocial'
+import AdminLanguages from './pages/admin/AdminLanguages'
 import SuperLayout    from './pages/super/SuperLayout'
 import SuperDashboard from './pages/super/SuperDashboard'
 import LoginPage      from './pages/auth/LoginPage'
@@ -59,6 +64,11 @@ export default function App() {
           <Route path="analytics"  element={<AdminReports />} />
           <Route path="qr"         element={<AdminQR />} />
           <Route path="orders"     element={<AdminDashboard />} />
+          <Route path="allergens"  element={<AdminAllergens />} />
+          <Route path="campaigns"  element={<AdminCampaigns />} />
+          <Route path="info-pages" element={<AdminInfoPages />} />
+          <Route path="social"     element={<AdminSocial />} />
+          <Route path="languages"  element={<AdminLanguages />} />
         </Route>
 
         {/* Super Admin */}
