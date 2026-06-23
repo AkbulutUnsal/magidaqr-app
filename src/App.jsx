@@ -28,6 +28,8 @@ import AdminSurvey    from './pages/admin/AdminSurvey'
 import AdminAI        from './pages/admin/AdminAI'
 import SuperLayout    from './pages/super/SuperLayout'
 import SuperDashboard from './pages/super/SuperDashboard'
+import SuperPlans     from './pages/super/SuperPlans'
+import SuperStats     from './pages/super/SuperStats'
 import LoginPage      from './pages/auth/LoginPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -94,6 +96,8 @@ export default function App() {
           </ProtectedRoute>
         }>
           <Route index element={<SuperDashboard />} />
+          <Route path="plans" element={<SuperPlans />} />
+          <Route path="stats" element={<SuperStats />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/login" replace />} />
