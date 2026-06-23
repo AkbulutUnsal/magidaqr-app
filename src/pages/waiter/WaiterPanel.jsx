@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { supabase } from '../../lib/supabase'
 import { formatDistanceToNow } from 'date-fns'
@@ -11,27 +11,13 @@ export default function WaiterPanel() {
   const [tab, setTab]       = useState('calls')
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (!profile?.restaurant_id) return
-    loadAll()
+  const profileRef = useRef(profile)
+  useEffect(() => { profileRef.current = profile }, [profile])
 
-    const ch1 = supabase.channel('waiter-orders-' + profile.restaurant_id)
-      .on('postgres_changes', { event:'*', schema:'public', table:'orders',
-        filter:`restaurant_id=eq.${profile.restaurant_id}` }, loadAll)
-      .subscribe()
-
-    const ch2 = supabase.channel('waiter-calls-' + profile.restaurant_id)
-      .on('postgres_changes', { event:'*', schema:'public', table:'table_calls',
-        filter:`restaurant_id=eq.${profile.restaurant_id}` }, loadAll)
-      .subscribe()
-
-    return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch2) }
-  }, [profile?.restaurant_id])
-
-  async function loadAll() {
-    const rid = profile.restaurant_id
-
-    // 1. Siparişler: hem "ready" hem de içecek olan "pending/preparing"
+  const loadAll = useCallback(async () => {
+    const rid = profileRef.current?.restaurant_id
+    if (!rid) return
+    // 1. Siparişler
     const { data: allOrders } = await supabase
       .from('orders')
       .select(`*, tables(table_number, label),
@@ -39,8 +25,6 @@ export default function WaiterPanel() {
       .eq('restaurant_id', rid)
       .in('status', ['pending', 'preparing', 'ready'])
       .order('created_at', { ascending: true })
-
-    // Tüm siparişler garsona görünsün
 
     setOrders(allOrders || [])
 
@@ -54,6 +38,28 @@ export default function WaiterPanel() {
 
     setCalls(callData || [])
     setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    if (!profile?.restaurant_id) return
+    loadAll()
+
+    const ch1 = supabase.channel('waiter-orders-' + profile.restaurant_id)
+      .on('postgres_changes', { event:'*', schema:'public', table:'orders',
+        filter:`restaurant_id=eq.${profile.restaurant_id}` }, () => loadAll())
+      .subscribe()
+
+    const ch2 = supabase.channel('waiter-calls-' + profile.restaurant_id)
+      .on('postgres_changes', { event:'*', schema:'public', table:'table_calls',
+        filter:`restaurant_id=eq.${profile.restaurant_id}` }, () => loadAll())
+      .subscribe()
+
+    return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch2) }
+  }, [profile?.restaurant_id, loadAll])
+
+  async function loadAll_REMOVED() {
+    const rid = profile.restaurant_id
+
   }
 
   async function dismissCall(id) {
@@ -148,7 +154,7 @@ export default function WaiterPanel() {
                 <div style={{display:'flex',justifyContent:'flex-end',marginBottom:12}}>
                   <button onClick={async()=>{
                     await supabase.from('table_calls').update({status:'closed'})
-                      .eq('restaurant_id',profile.restaurant_id).eq('status','pending')
+                      .eq('restaurant_id',profile.restaurant_id).eq('status','open')
                     loadAll()
                   }} style={{fontSize:11,color:'#666',background:'transparent',border:'1px solid #333',
                     padding:'5px 12px',borderRadius:8,cursor:'pointer'}}>

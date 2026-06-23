@@ -85,13 +85,17 @@ export default function MenuPage() {
   const cartCount = cart.reduce((s,c) => s+c.qty, 0)
   const cartTotal = cart.reduce((s,c) => s+c.price*c.qty, 0)
 
+  const [placing, setPlacing] = useState(false)
   const placeOrder = async (note) => {
+    if (placing) return
+    setPlacing(true)
     const { data: order, error } = await supabase.from('orders')
       .insert({ restaurant_id: restaurant.id, table_id: tableId, note, total_price: cartTotal, lang })
       .select().single()
-    if (error || !order) return alert(t('error'))
+    if (error || !order) { setPlacing(false); return alert(t('error')) }
     await supabase.from('order_items').insert(cart.map(c => ({ order_id: order.id, menu_item_id: c.id, quantity: c.qty, unit_price: c.price })))
     setCart([]); setCartOpen(false)
+    setPlacing(false)
     navigate(`/order/${order.id}`)
   }
 
