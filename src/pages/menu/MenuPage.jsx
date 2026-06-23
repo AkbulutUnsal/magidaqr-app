@@ -32,7 +32,8 @@ export default function MenuPage() {
   const [cart, setCart]             = useState([])
   const [cartOpen, setCartOpen]     = useState(false)
   const [loading, setLoading]       = useState(true)
-  const [callSent, setCallSent]     = useState(null)
+  const [waiterSent, setWaiterSent] = useState(false)
+  const [billSent, setBillSent]     = useState(false)
   const [detailItem, setDetailItem] = useState(null)
   const [scrolled, setScrolled]     = useState(false)
   const headerRef = useRef(null)
@@ -99,11 +100,12 @@ export default function MenuPage() {
     navigate(`/order/${order.id}`)
   }
 
-  const [sending, setSending] = useState(false)
   const sendCall = async (type) => {
-    if (!restaurant || !tableId || callSent || sending) return
-    setSending(true)
-    setCallSent(type)
+    if (!restaurant || !tableId) return
+    if (type === 'waiter' && waiterSent) return
+    if (type === 'bill' && billSent) return
+    if (type === 'waiter') setWaiterSent(true)
+    if (type === 'bill') setBillSent(true)
     try {
       await supabase.from('table_calls').insert({ 
         restaurant_id: restaurant.id, 
@@ -112,8 +114,10 @@ export default function MenuPage() {
         status: 'open'
       })
     } catch(e) { console.error(e) }
-    setSending(false)
-    setTimeout(() => setCallSent(null), 5000)
+    setTimeout(() => {
+      if (type === 'waiter') setWaiterSent(false)
+      if (type === 'bill') setBillSent(false)
+    }, 5000)
   }
 
   const selectCategory = (id) => {
@@ -373,7 +377,7 @@ export default function MenuPage() {
 
       {/* ── BOTTOM BAR ── */}
       <BottomBar
-        brand={brand} callSent={callSent} sendCall={sendCall}
+        brand={brand} waiterSent={waiterSent} billSent={billSent} sendCall={sendCall}
         cartCount={cartCount} cartTotal={cartTotal} setCartOpen={setCartOpen}
         categories={categories} activeCategory={activeCategory}
         selectCategory={selectCategory} n={n} t={t}
@@ -498,7 +502,7 @@ function LangBtn({ lang, i18n, brand, small }) {
 }
 
 // ── BOTTOM BAR ──
-function BottomBar({ brand, callSent, sendCall, cartCount, cartTotal, setCartOpen, categories, activeCategory, selectCategory, n, t, waiterLabel, billLabel }) {
+function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal, setCartOpen, categories, activeCategory, selectCategory, n, t, waiterLabel, billLabel }) {
   const [menuOpen, setMenuOpen] = useState(false)
 
   return (
@@ -560,18 +564,18 @@ function BottomBar({ brand, callSent, sendCall, cartCount, cartTotal, setCartOpe
         boxShadow:'0 -4px 24px rgba(0,0,0,0.1)' }}>
 
         {/* Garson */}
-        <button onClick={(e) => { e.preventDefault(); !callSent && sendCall('waiter') }} disabled={!!callSent}
+        <button onClick={(e) => { e.preventDefault(); sendCall('waiter') }} disabled={waiterSent}
           style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:3,
-            padding:'8px 4px', borderRadius:14, border:'none', cursor:callSent?'default':'pointer',
-            background:callSent==='waiter'?'#f4f4f4':'#E1F5EE',
-            opacity:callSent&&callSent!=='waiter'?0.4:1 }}>
+            padding:'8px 4px', borderRadius:14, border:'none', cursor:waiterSent?'default':'pointer',
+            background:waiterSent?'#f4f4f4':'#E1F5EE',
+            opacity:1 }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-            stroke={callSent==='waiter'?'#ccc':brand} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            stroke={waiterSent?'#ccc':brand} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
           </svg>
-          <span style={{ fontSize:9, fontWeight:700, color:callSent==='waiter'?'#ccc':'#0F6E56', whiteSpace:'nowrap' }}>
-            {callSent==='waiter'?'✓ Tamam':waiterLabel}
+          <span style={{ fontSize:9, fontWeight:700, color:waiterSent?'#ccc':'#0F6E56', whiteSpace:'nowrap' }}>
+            {waiterSent?'✓ Tamam':waiterLabel}
           </span>
         </button>
 
@@ -593,20 +597,20 @@ function BottomBar({ brand, callSent, sendCall, cartCount, cartTotal, setCartOpe
         </button>
 
         {/* Hesap */}
-        <button onClick={(e) => { e.preventDefault(); !callSent && sendCall('bill') }} disabled={!!callSent}
+        <button onClick={(e) => { e.preventDefault(); sendCall('bill') }} disabled={billSent}
           style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:3,
-            padding:'8px 4px', borderRadius:14, border:'none', cursor:callSent?'default':'pointer',
-            background:callSent==='bill'?'#f4f4f4':'#FAEEDA',
-            opacity:callSent&&callSent!=='bill'?0.4:1 }}>
+            padding:'8px 4px', borderRadius:14, border:'none', cursor:billSent?'default':'pointer',
+            background:billSent?'#f4f4f4':'#FAEEDA',
+            opacity:1 }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-            stroke={callSent==='bill'?'#ccc':'#BA7517'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            stroke={billSent?'#ccc':'#BA7517'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <rect x="5" y="2" width="14" height="20" rx="2"/>
             <line x1="9" y1="7" x2="15" y2="7"/>
             <line x1="9" y1="11" x2="15" y2="11"/>
             <line x1="9" y1="15" x2="12" y2="15"/>
           </svg>
-          <span style={{ fontSize:9, fontWeight:700, color:callSent==='bill'?'#ccc':'#633806', whiteSpace:'nowrap' }}>
-            {callSent==='bill'?'✓ Tamam':billLabel}
+          <span style={{ fontSize:9, fontWeight:700, color:billSent?'#ccc':'#633806', whiteSpace:'nowrap' }}>
+            {billSent?'✓ Tamam':billLabel}
           </span>
         </button>
 

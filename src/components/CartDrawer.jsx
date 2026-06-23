@@ -4,6 +4,14 @@ import { useTranslation } from 'react-i18next'
 export default function CartDrawer({ cart, setCart, onClose, onOrder }) {
   const { t } = useTranslation()
   const [note, setNote] = useState('')
+  const [placing, setPlacing] = useState(false)
+
+  const handleOrder = async () => {
+    if (placing) return
+    setPlacing(true)
+    try { await onOrder(note) }
+    catch(e) { console.error(e); setPlacing(false) }
+  }
 
   const total = cart.reduce((s, c) => s + c.price * c.qty, 0)
 
@@ -51,8 +59,9 @@ export default function CartDrawer({ cart, setCart, onClose, onOrder }) {
             <span>{t('total')}</span>
             <span>{total.toFixed(2)} ₾</span>
           </div>
-          <button className="btn-primary btn-full" onClick={() => onOrder(note)}>
-            {t('place_order')}
+          <button className="btn-primary btn-full" onClick={handleOrder} disabled={placing}
+            style={{ opacity: placing ? 0.6 : 1, cursor: placing ? 'wait' : 'pointer' }}>
+            {placing ? '...' : t('place_order')}
           </button>
         </div>
       </div>
