@@ -22,6 +22,10 @@ import AdminMedia     from './pages/admin/AdminMedia'
 import AdminHeroCards from './pages/admin/AdminHeroCards'
 import AdminBulkPrice from './pages/admin/AdminBulkPrice'
 import AdminImport    from './pages/admin/AdminImport'
+import AdminOutlets   from './pages/admin/AdminOutlets'
+import AdminDelivery  from './pages/admin/AdminDelivery'
+import AdminSurvey    from './pages/admin/AdminSurvey'
+import AdminAI        from './pages/admin/AdminAI'
 import SuperLayout    from './pages/super/SuperLayout'
 import SuperDashboard from './pages/super/SuperDashboard'
 import LoginPage      from './pages/auth/LoginPage'
@@ -77,6 +81,10 @@ export default function App() {
           <Route path="hero-cards" element={<AdminHeroCards />} />
           <Route path="bulk-price" element={<AdminBulkPrice />} />
           <Route path="import"     element={<AdminImport />} />
+          <Route path="outlets"    element={<AdminOutlets />} />
+          <Route path="delivery"   element={<AdminDelivery />} />
+          <Route path="survey"     element={<AdminSurvey />} />
+          <Route path="ai"         element={<AdminAI />} />
         </Route>
 
         {/* Super Admin */}
