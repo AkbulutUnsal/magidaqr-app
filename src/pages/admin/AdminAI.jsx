@@ -1,13 +1,24 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { supabase } from '../../lib/supabase'
+import { AI_ADDON } from '../../lib/plans'
 
 export default function AdminAI() {
   const { profile } = useAuth()
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState(null)
+  const [aiEnabled, setAiEnabled] = useState(null)  // null=kontrol ediliyor
 
-  useEffect(() => { if (profile?.restaurant_id) analyze() }, [profile?.restaurant_id])
+  useEffect(() => {
+    if (!profile?.tenant_id) return
+    supabase.from('tenants').select('ai_addon').eq('id', profile.tenant_id).single()
+      .then(({ data }) => {
+        const on = !!data?.ai_addon
+        setAiEnabled(on)
+        if (on && profile?.restaurant_id) analyze()
+        else setLoading(false)
+      })
+  }, [profile?.tenant_id, profile?.restaurant_id])
 
   async function analyze() {
     setLoading(true)
@@ -75,6 +86,36 @@ export default function AdminAI() {
     setStats({ totalRevenue, orderCount:ord.length, avgOrder, topSellers, topRevenue, neverSold, peakHour, hasData:Math.max(...hourBuckets)>0, tips })
     setLoading(false)
   }
+
+  // AI eklentisi yoksa kilit ekranı
+  if (aiEnabled === false) return (
+    <div className="admin-page">
+      <div className="page-header"><h1 className="page-title">🤖 AI Asistan</h1></div>
+      <div style={{ maxWidth:520, margin:'40px auto', textAlign:'center', background:'#fff',
+        border:'1px solid #eee', borderRadius:18, padding:'40px 32px' }}>
+        <div style={{ fontSize:48, marginBottom:16 }}>🔒</div>
+        <h2 style={{ fontSize:20, fontWeight:800, color:'#222', marginBottom:8 }}>AI Asistan kilitli</h2>
+        <p style={{ fontSize:14, color:'#888', lineHeight:1.6, marginBottom:24 }}>
+          Bu özellik <strong>AI Asistan eklentisi</strong> ile açılır. Satış analizleri, akıllı öneriler
+          ve menü mühendisliği için eklentiyi etkinleştirin.
+        </p>
+        <div style={{ background:'#f5f3ff', borderRadius:12, padding:'18px 20px', textAlign:'left', marginBottom:24 }}>
+          {AI_ADDON.features.map((f,i)=>(
+            <div key={i} style={{ display:'flex', alignItems:'center', gap:8, marginBottom:i<AI_ADDON.features.length-1?8:0 }}>
+              <span style={{ color:'#8b5cf6' }}>✓</span>
+              <span style={{ fontSize:13, color:'#555' }}>{f}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize:22, fontWeight:900, color:'#8b5cf6' }}>
+          +{AI_ADDON.price} {AI_ADDON.currency}<span style={{fontSize:13,fontWeight:500,color:'#999'}}>/{AI_ADDON.period}</span>
+        </div>
+        <p style={{ fontSize:12, color:'#bbb', marginTop:16 }}>
+          Etkinleştirmek için sistem yöneticinizle iletişime geçin.
+        </p>
+      </div>
+    </div>
+  )
 
   if (loading) return (
     <div className="admin-page">

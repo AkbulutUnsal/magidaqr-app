@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import { PLANS, AI_ADDON } from '../../lib/plans'
 
 export default function SuperDashboard() {
   const [tenants, setTenants] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
-  const [form, setForm] = useState({ name:'', email:'', plan:'starter', slug:'' })
+  const [form, setForm] = useState({ name:'', email:'', plan:'basic', slug:'', ai_addon:false })
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
 
@@ -39,7 +40,7 @@ export default function SuperDashboard() {
     try {
       const { data: tenant, error: te } = await supabase
         .from('tenants')
-        .insert({ name, plan: form.plan, slug, is_active: true })
+        .insert({ name, plan: form.plan, slug, is_active: true, ai_addon: form.ai_addon })
         .select().single()
       if (te) throw te
 
@@ -49,7 +50,7 @@ export default function SuperDashboard() {
       if (re) throw re
 
       setMsg('✅ Firma başarıyla eklendi!')
-      setForm({ name:'', email:'', plan:'starter', slug:'' })
+      setForm({ name:'', email:'', plan:'basic', slug:'', ai_addon:false })
       setShowAdd(false)
       loadTenants()
     } catch(e) {
@@ -58,8 +59,9 @@ export default function SuperDashboard() {
     setSaving(false)
   }
 
-  const planColor = { starter:'#3b82f6', pro:'#1D9E75', chain:'#8b5cf6' }
-  const planBg    = { starter:'#eff6ff', pro:'#e8f5ee', chain:'#f5f3ff' }
+  const planColor = { basic:'#1D9E75', advanced:'#8b5cf6' }
+  const planBg    = { basic:'#e8f5ee', advanced:'#f5f3ff' }
+  const planName  = { basic:'Temel', advanced:'Gelişmiş' }
 
   if (loading) return <div style={{textAlign:'center',padding:64,color:'#aaa'}}>Yükleniyor...</div>
 
@@ -113,14 +115,36 @@ export default function SuperDashboard() {
                 onFocus={e=>e.target.style.borderColor='#1D9E75'} onBlur={e=>e.target.style.borderColor='#e8e8e4'}/>
             </div>
 
-            <div style={{marginBottom:20}}>
+            <div style={{marginBottom:14}}>
               <label style={{fontSize:12,fontWeight:600,color:'#666',display:'block',marginBottom:4}}>Paket</label>
               <select value={form.plan} onChange={e=>setForm(p=>({...p,plan:e.target.value}))}
                 style={{width:'100%',padding:'9px 12px',border:'1.5px solid #e8e8e4',borderRadius:8,fontSize:13,outline:'none',fontFamily:'inherit',background:'#fff'}}>
-                <option value="starter">Starter — $29/ay</option>
-                <option value="pro">Pro — $59/ay</option>
-                <option value="chain">Chain — $129/ay</option>
+                <option value="basic">{PLANS.basic.name} — {PLANS.basic.price} {PLANS.basic.currency}/{PLANS.basic.period}</option>
+                <option value="advanced">{PLANS.advanced.name} — {PLANS.advanced.price} {PLANS.advanced.currency}/{PLANS.advanced.period}</option>
               </select>
+              <p style={{fontSize:10,color:'#aaa',marginTop:4}}>
+                {form.plan==='basic' ? PLANS.basic.tagline : PLANS.advanced.tagline}
+              </p>
+            </div>
+
+            <div style={{marginBottom:20,padding:'12px 14px',background:form.ai_addon?'#f5f3ff':'#f9f9f7',borderRadius:10,border:`1px solid ${form.ai_addon?'#ddd6fe':'#eee'}`}}>
+              <label style={{display:'flex',alignItems:'center',gap:10,cursor:'pointer'}}>
+                <input type="checkbox" checked={form.ai_addon} onChange={e=>setForm(p=>({...p,ai_addon:e.target.checked}))}
+                  style={{width:18,height:18,accentColor:'#8b5cf6',cursor:'pointer'}} />
+                <span style={{flex:1}}>
+                  <span style={{fontSize:13,fontWeight:700,color:'#222'}}>✨ {AI_ADDON.name} eklentisi</span>
+                  <span style={{fontSize:11,color:'#888',display:'block',marginTop:1}}>Satış analizi & akıllı öneriler</span>
+                </span>
+                <span style={{fontSize:13,fontWeight:700,color:'#8b5cf6'}}>+{AI_ADDON.price} {AI_ADDON.currency}/{AI_ADDON.period}</span>
+              </label>
+            </div>
+
+            {/* Toplam */}
+            <div style={{marginBottom:20,padding:'10px 14px',background:'#1D9E7510',borderRadius:10,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <span style={{fontSize:13,fontWeight:600,color:'#0F6E56'}}>Yıllık Toplam</span>
+              <span style={{fontSize:18,fontWeight:900,color:'#1D9E75'}}>
+                {(form.plan==='basic'?PLANS.basic.price:PLANS.advanced.price) + (form.ai_addon?AI_ADDON.price:0)} ₾
+              </span>
             </div>
 
             {msg && <p style={{fontSize:12,color:'#ef4444',marginBottom:12}}>{msg}</p>}
@@ -178,8 +202,11 @@ export default function SuperDashboard() {
                     ) : <span style={{fontSize:12,color:'#bbb'}}>—</span>}
                   </td>
                   <td style={{padding:'14px 16px'}}>
-                    <span style={{fontSize:11,fontWeight:700,color:planColor[t.plan]||'#aaa',background:planBg[t.plan]||'#f4f4f2',padding:'3px 10px',borderRadius:20,textTransform:'capitalize'}}>
-                      {t.plan||'starter'}
+                    <span style={{display:'inline-flex',alignItems:'center',gap:5}}>
+                      <span style={{fontSize:11,fontWeight:700,color:planColor[t.plan]||'#aaa',background:planBg[t.plan]||'#f4f4f2',padding:'3px 10px',borderRadius:20}}>
+                        {planName[t.plan]||t.plan||'Temel'}
+                      </span>
+                      {t.ai_addon && <span style={{fontSize:11}} title="AI Asistan">✨</span>}
                     </span>
                   </td>
                   <td style={{padding:'14px 16px'}}>

@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { supabase } from '../../lib/supabase'
+import { getPlan } from '../../lib/plans'
 
 export default function AdminOutlets() {
   const { profile } = useAuth()
   const [list, setList] = useState([])
   const [edit, setEdit] = useState(null)
   const [show, setShow] = useState(false)
+  const [plan, setPlan] = useState('basic')
 
   useEffect(() => { if (profile?.restaurant_id) load() }, [profile?.restaurant_id])
 
@@ -14,7 +16,16 @@ export default function AdminOutlets() {
     const { data } = await supabase.from('outlets')
       .select('*').eq('restaurant_id', profile.restaurant_id).order('created_at')
     setList(data || [])
+    // tenant planını çek
+    if (profile?.tenant_id) {
+      const { data: tenant } = await supabase.from('tenants')
+        .select('plan').eq('id', profile.tenant_id).single()
+      if (tenant?.plan) setPlan(tenant.plan)
+    }
   }
+
+  const maxOutlets = getPlan(plan).maxOutlets
+  const limitReached = list.length >= maxOutlets
 
   async function save(form) {
     const payload = { ...form, restaurant_id: profile.restaurant_id,
@@ -40,9 +51,23 @@ export default function AdminOutlets() {
     <div className="admin-page">
       <div className="page-header">
         <h1 className="page-title">Outletler / Şubeler</h1>
-        <button className="btn-primary" onClick={()=>{ setEdit(null); setShow(true) }}>+ Yeni Şube</button>
+        <button className="btn-primary" onClick={()=>{ if(!limitReached){ setEdit(null); setShow(true) } }}
+          disabled={limitReached} style={{opacity:limitReached?0.5:1,cursor:limitReached?'not-allowed':'pointer'}}>+ Yeni Şube</button>
       </div>
       <p style={{color:'#888',fontSize:13,marginBottom:20}}>Birden fazla lokasyonunuz varsa şubelerinizi yönetin.</p>
+
+      {limitReached && (
+        <div style={{background:'#fff8e8',border:'1px solid #ffe9b8',borderRadius:12,padding:'14px 18px',marginBottom:20,
+          display:'flex',alignItems:'center',gap:12}}>
+          <span style={{fontSize:22}}>🔒</span>
+          <div style={{flex:1}}>
+            <p style={{fontSize:13,fontWeight:700,color:'#8a6d1a'}}>Şube limitine ulaştınız</p>
+            <p style={{fontSize:12,color:'#a98a3a',marginTop:2}}>
+              Temel paket tek şube içerir. Çoklu şube için <strong>Gelişmiş paket</strong>'e geçin.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:14}}>
         {list.map(o => (
