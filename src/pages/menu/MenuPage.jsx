@@ -36,6 +36,9 @@ export default function MenuPage() {
   const [billSent, setBillSent]     = useState(false)
   const [detailItem, setDetailItem] = useState(null)
   const [scrolled, setScrolled]     = useState(false)
+  const [heroCards, setHeroCards]   = useState([])
+  const [campaigns, setCampaigns]   = useState([])
+  const [allergens, setAllergens]   = useState([])
   const headerRef = useRef(null)
 
   useEffect(() => {
@@ -43,15 +46,21 @@ export default function MenuPage() {
       const { data: rest } = await supabase.from('restaurants').select('*').eq('slug', restaurantSlug).single()
       if (!rest) return
       setRestaurant(rest)
-      if (!['ka','en','tr','ru'].includes(lang)) i18n.changeLanguage(rest.default_lang)
+      if (!['ka','en','tr','ru'].includes(lang)) i18n.changeLanguage(rest.default_language || rest.default_lang || 'ka')
       const { data: table } = await supabase.from('tables').select('*').eq('id', tableId).single()
       setTableInfo(table)
-      const [{ data: cats }, { data: menuItems }] = await Promise.all([
+      const [{ data: cats }, { data: menuItems }, { data: heroData }, { data: campData }, { data: allergData }] = await Promise.all([
         supabase.from('menu_categories').select('*').eq('restaurant_id', rest.id).eq('is_active', true).order('sort_order'),
-        supabase.from('menu_items').select('*').eq('restaurant_id', rest.id).order('sort_order')
+        supabase.from('menu_items').select('*').eq('restaurant_id', rest.id).order('sort_order'),
+        supabase.from('hero_cards').select('*').eq('restaurant_id', rest.id).eq('is_active', true).order('sort_order'),
+        supabase.from('campaigns').select('*').eq('restaurant_id', rest.id).eq('is_active', true).order('sort_order'),
+        supabase.from('allergens').select('*').eq('restaurant_id', rest.id)
       ])
       setCategories(cats || [])
       setItems(menuItems || [])
+      setHeroCards(heroData || [])
+      setCampaigns(campData || [])
+      setAllergens(allergData || [])
       setLoading(false)
     }
     load()
@@ -255,6 +264,70 @@ export default function MenuPage() {
       {/* ── SCROLL CONTAINER ── */}
       <div id="menu-scroll-container" style={{ paddingBottom:140 }}>
 
+        {/* ── HERO KARTLARI (slider) ── */}
+        {heroCards.length > 0 && (
+          <div style={{ display:'flex', gap:12, overflowX:'auto', padding:'16px 16px 4px',
+            scrollbarWidth:'none', WebkitOverflowScrolling:'touch' }}>
+            {heroCards.map(hc => (
+              <a key={hc.id} href={hc.link_url || undefined}
+                style={{ flexShrink:0, width: heroCards.length===1 ? '100%' : 300, textDecoration:'none',
+                  borderRadius:18, overflow:'hidden', position:'relative', display:'block',
+                  boxShadow:'0 4px 16px rgba(0,0,0,0.12)', animation:'fadeUp 0.4s ease',
+                  background: hc.image_url ? '#000' : `linear-gradient(135deg, ${brand}, ${brand}cc)` }}>
+                {hc.image_url && (
+                  <img src={hc.image_url} alt="" style={{ width:'100%', height:140, objectFit:'cover', display:'block', opacity:0.85 }} />
+                )}
+                <div style={{ position: hc.image_url ? 'absolute' : 'static', inset:0,
+                  display:'flex', flexDirection:'column', justifyContent:'flex-end',
+                  padding:16, minHeight: hc.image_url ? 'auto' : 120,
+                  background: hc.image_url ? 'linear-gradient(to top, rgba(0,0,0,0.6), transparent 70%)' : 'transparent' }}>
+                  <p style={{ fontSize:16, fontWeight:800, color:'#fff', margin:0, lineHeight:1.2,
+                    textShadow:'0 1px 4px rgba(0,0,0,0.4)' }}>{n(hc,'title')}</p>
+                  {n(hc,'subtitle') && (
+                    <p style={{ fontSize:12, color:'rgba(255,255,255,0.9)', margin:'4px 0 0',
+                      textShadow:'0 1px 3px rgba(0,0,0,0.4)' }}>{n(hc,'subtitle')}</p>
+                  )}
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
+
+        {/* ── KAMPANYALAR ── */}
+        {campaigns.length > 0 && (
+          <div style={{ padding:'16px 0 4px' }}>
+            <h2 style={{ fontSize:14, fontWeight:700, color:'#111', padding:'0 16px', marginBottom:12,
+              display:'flex', alignItems:'center', gap:6 }}>
+              <span>🎉</span> {lang==='tr'?'Kampanyalar':lang==='ka'?'აქციები':lang==='ru'?'Акции':'Campaigns'}
+            </h2>
+            <div style={{ display:'flex', gap:12, overflowX:'auto', padding:'0 16px 8px',
+              scrollbarWidth:'none', WebkitOverflowScrolling:'touch' }}>
+              {campaigns.map(c => (
+                <div key={c.id} style={{ flexShrink:0, width:260, background:'#fff', borderRadius:16,
+                  overflow:'hidden', boxShadow:'0 4px 16px rgba(0,0,0,0.08)', animation:'fadeUp 0.4s ease' }}>
+                  {c.image_url
+                    ? <img src={c.image_url} alt="" style={{ width:'100%', height:110, objectFit:'cover' }} />
+                    : <div style={{ height:110, background:`linear-gradient(135deg,${brand},${brand}cc)`,
+                        display:'flex', alignItems:'center', justifyContent:'center', color:'#fff',
+                        fontSize:30, fontWeight:900 }}>
+                        {c.discount_percent>0 ? `%${c.discount_percent}` : '🎉'}
+                      </div>}
+                  <div style={{ padding:'12px 14px' }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:6 }}>
+                      <p style={{ fontSize:14, fontWeight:700, color:'#222', margin:0 }}>{n(c,'title')}</p>
+                      {c.badge_text && <span style={{ background:'#E8192C', color:'#fff', fontSize:9,
+                        fontWeight:700, padding:'2px 7px', borderRadius:20, whiteSpace:'nowrap' }}>{c.badge_text}</span>}
+                    </div>
+                    {n(c,'description') && (
+                      <p style={{ fontSize:12, color:'#888', marginTop:5, lineHeight:1.4 }}>{n(c,'description')}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Öne çıkan ürünler — yatay carousel */}
         {featuredItems.length > 0 && (
           <div style={{ padding:'20px 0 4px' }}>
@@ -373,6 +446,43 @@ export default function MenuPage() {
             </div>
           </div>
         )}
+
+        {/* ── SOSYAL MEDYA & İLETİŞİM ── */}
+        {(restaurant?.instagram_url || restaurant?.facebook_url || restaurant?.tiktok_url ||
+          restaurant?.whatsapp_number || restaurant?.website_url) && (
+          <div style={{ margin:'0 16px 24px', display:'flex', justifyContent:'center', gap:14, flexWrap:'wrap' }}>
+            {restaurant.instagram_url && (
+              <a href={restaurant.instagram_url} target="_blank" rel="noopener noreferrer"
+                style={socialBtnStyle(brand)} aria-label="Instagram">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>
+              </a>
+            )}
+            {restaurant.facebook_url && (
+              <a href={restaurant.facebook_url} target="_blank" rel="noopener noreferrer"
+                style={socialBtnStyle(brand)} aria-label="Facebook">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+              </a>
+            )}
+            {restaurant.tiktok_url && (
+              <a href={restaurant.tiktok_url} target="_blank" rel="noopener noreferrer"
+                style={socialBtnStyle(brand)} aria-label="TikTok">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9 12a4 4 0 1 0 4 4V4c.5 2 2 3.5 4 4"/></svg>
+              </a>
+            )}
+            {restaurant.whatsapp_number && (
+              <a href={`https://wa.me/${restaurant.whatsapp_number.replace(/[^0-9]/g,'')}`} target="_blank" rel="noopener noreferrer"
+                style={socialBtnStyle(brand)} aria-label="WhatsApp">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15l-1.4 5 5.2-1.4A10 10 0 1 0 12 2zm5 14c-.3.8-1.5 1.5-2.3 1.6-.6.1-1.3.2-4.2-.9-3.5-1.4-5.7-5-5.9-5.2-.2-.3-1.4-1.9-1.4-3.6s.9-2.5 1.2-2.9c.3-.3.7-.4 1-.4h.7c.2 0 .5 0 .8.6l1.1 2.6c.1.2.1.4 0 .6l-.5 1c-.1.2-.2.4 0 .7.7 1.2 1.5 1.9 2.6 2.5.2.1.4.1.6-.1l.9-1c.2-.3.4-.2.7-.1l2.5 1.2c.3.2.5.2.6.4.1.3.1.9-.2 1.7z"/></svg>
+              </a>
+            )}
+            {restaurant.website_url && (
+              <a href={restaurant.website_url} target="_blank" rel="noopener noreferrer"
+                style={socialBtnStyle(brand)} aria-label="Website">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20a15 15 0 0 1 0-20z"/></svg>
+              </a>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ── BOTTOM BAR ── */}
@@ -427,10 +537,16 @@ export default function MenuPage() {
                     {detailItem.calories} kcal
                   </span>
                 )}
-                {detailItem.allergens?.map(a => (
-                  <span key={a} style={{ background:'#fef2f2', color:'#dc2626', fontSize:11,
-                    fontWeight:600, padding:'4px 10px', borderRadius:20 }}>⚠ {a}</span>
-                ))}
+                {detailItem.allergen_ids?.map(aid => {
+                  const a = allergens.find(x => x.id === aid)
+                  if (!a) return null
+                  return (
+                    <span key={aid} style={{ background:'#fef2f2', color:'#dc2626', fontSize:11,
+                      fontWeight:600, padding:'4px 10px', borderRadius:20 }}>
+                      {a.icon} {n(a)}
+                    </span>
+                  )
+                })}
               </div>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
                 paddingTop:16, borderTop:'1px solid #f4f4f2' }}>
@@ -456,6 +572,12 @@ export default function MenuPage() {
 }
 
 // ── LANG BUTTON ──
+const socialBtnStyle = (brand) => ({
+  width:42, height:42, borderRadius:'50%', background:'#fff',
+  border:'1px solid #ebebeb', display:'flex', alignItems:'center', justifyContent:'center',
+  color:brand, boxShadow:'0 2px 8px rgba(0,0,0,0.05)', textDecoration:'none'
+})
+
 function LangBtn({ lang, i18n, brand, small }) {
   const [open, setOpen] = useState(false)
   const LANGS = [
