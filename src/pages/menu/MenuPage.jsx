@@ -39,6 +39,7 @@ export default function MenuPage() {
   const [heroCards, setHeroCards]   = useState([])
   const [campaigns, setCampaigns]   = useState([])
   const [allergens, setAllergens]   = useState([])
+  const [infoPages, setInfoPages]   = useState([])
   const headerRef = useRef(null)
 
   useEffect(() => {
@@ -49,18 +50,20 @@ export default function MenuPage() {
       if (!['ka','en','tr','ru'].includes(lang)) i18n.changeLanguage(rest.default_language || rest.default_lang || 'ka')
       const { data: table } = await supabase.from('tables').select('*').eq('id', tableId).single()
       setTableInfo(table)
-      const [{ data: cats }, { data: menuItems }, { data: heroData }, { data: campData }, { data: allergData }] = await Promise.all([
+      const [{ data: cats }, { data: menuItems }, { data: heroData }, { data: campData }, { data: allergData }, { data: infoData }] = await Promise.all([
         supabase.from('menu_categories').select('*').eq('restaurant_id', rest.id).eq('is_active', true).order('sort_order'),
         supabase.from('menu_items').select('*').eq('restaurant_id', rest.id).order('sort_order'),
         supabase.from('hero_cards').select('*').eq('restaurant_id', rest.id).eq('is_active', true).order('sort_order'),
         supabase.from('campaigns').select('*').eq('restaurant_id', rest.id).eq('is_active', true).order('sort_order'),
-        supabase.from('allergens').select('*').eq('restaurant_id', rest.id)
+        supabase.from('allergens').select('*').eq('restaurant_id', rest.id),
+        supabase.from('info_pages').select('id,slug,title_ka,title_en,title_tr,title_ru').eq('restaurant_id', rest.id).eq('is_published', true).order('sort_order')
       ])
       setCategories(cats || [])
       setItems(menuItems || [])
       setHeroCards(heroData || [])
       setCampaigns(campData || [])
       setAllergens(allergData || [])
+      setInfoPages(infoData || [])
       setLoading(false)
     }
     load()
@@ -481,6 +484,23 @@ export default function MenuPage() {
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20a15 15 0 0 1 0-20z"/></svg>
               </a>
             )}
+          </div>
+        )}
+
+        {/* ── BİLGİ SAYFALARI ── */}
+        {infoPages.length > 0 && (
+          <div style={{ margin:'0 16px 24px', display:'flex', justifyContent:'center', flexWrap:'wrap',
+            gap:'8px 16px', paddingTop:8 }}>
+            {infoPages.map((p, i) => (
+              <span key={p.id} style={{ display:'flex', alignItems:'center', gap:'8px 16px' }}>
+                {i > 0 && <span style={{ color:'#ddd', marginRight:8 }}>·</span>}
+                <button onClick={() => navigate(`/menu/${restaurantSlug}/${tableId}/info/${p.slug}`)}
+                  style={{ background:'none', border:'none', cursor:'pointer', fontSize:12,
+                    color:'#999', textDecoration:'underline', padding:0 }}>
+                  {n(p,'title')}
+                </button>
+              </span>
+            ))}
           </div>
         )}
       </div>

@@ -3,6 +3,7 @@ import './i18n'
 
 import MenuPage       from './pages/menu/MenuPage'
 import OrderStatus    from './pages/menu/OrderStatus'
+import InfoPageView   from './pages/menu/InfoPageView'
 import KitchenPanel   from './pages/kitchen/KitchenPanel'
 import WaiterPanel    from './pages/waiter/WaiterPanel'
 import AdminLayout    from './pages/admin/AdminLayout'
@@ -40,6 +41,7 @@ export default function App() {
         {/* Müşteri */}
         <Route path="/menu/:restaurantSlug/:tableId" element={<MenuPage />} />
         <Route path="/order/:orderId" element={<OrderStatus />} />
+        <Route path="/menu/:restaurantSlug/:tableId/info/:pageSlug" element={<InfoPageView />} />
 
         {/* Auth */}
         <Route path="/login" element={<LoginPage />} />
