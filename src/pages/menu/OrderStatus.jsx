@@ -160,7 +160,7 @@ export default function OrderStatus() {
         {isServed && (
           <div style={{display:'flex',flexDirection:'column',gap:10,animation:'fadeUp .3s ease'}}>
             {/* Garson çağır */}
-            <button onClick={()=>sendCall('waiter')} disabled={type==='waiter'?waiterSent:billSent}
+            <button onClick={()=>sendCall('waiter')} disabled={waiterSent}
               style={{padding:'14px',background:waiterSent?'#e0e0e0':brand,color:'#fff',border:'none',
                 borderRadius:14,fontSize:14,fontWeight:700,cursor:waiterSent?'default':'pointer',
                 display:'flex',alignItems:'center',justifyContent:'center',gap:10,
@@ -172,7 +172,7 @@ export default function OrderStatus() {
             </button>
 
             {/* Hesap iste */}
-            <button onClick={()=>sendCall('bill')} disabled={type==='waiter'?waiterSent:billSent}
+            <button onClick={()=>sendCall('bill')} disabled={billSent}
               style={{padding:'14px',background:billSent?'#e0e0e0':'#f59e0b',color:'#fff',border:'none',
                 borderRadius:14,fontSize:14,fontWeight:700,cursor:waiterSent?'default':'pointer',
                 display:'flex',alignItems:'center',justifyContent:'center',gap:10,
@@ -197,13 +197,13 @@ export default function OrderStatus() {
         {/* Beklenirken de garson çağır butonu */}
         {!isServed && !isCancelled && (
           <div style={{display:'flex',gap:10}}>
-            <button onClick={()=>sendCall('waiter')} disabled={type==='waiter'?waiterSent:billSent}
+            <button onClick={()=>sendCall('waiter')} disabled={waiterSent}
               style={{flex:1,padding:'12px',background:'#fff',color:waiterSent?'#aaa':brand,
                 border:`1.5px solid ${waiterSent?'#e0e0e0':brand+'40'}`,borderRadius:12,
                 fontSize:13,fontWeight:600,cursor:waiterSent?'default':'pointer'}}>
               {waiterSent?'✓ Gönderildi':(WAITER[lang]||WAITER.en)}
             </button>
-            <button onClick={()=>sendCall('bill')} disabled={type==='waiter'?waiterSent:billSent}
+            <button onClick={()=>sendCall('bill')} disabled={billSent}
               style={{flex:1,padding:'12px',background:'#fff',color:billSent?'#aaa':'#f59e0b',
                 border:`1.5px solid ${billSent?'#e0e0e0':'#f59e0b40'}`,borderRadius:12,
                 fontSize:13,fontWeight:600,cursor:billSent?'default':'pointer'}}>
