@@ -18,6 +18,10 @@ import AdminCampaigns from './pages/admin/AdminCampaigns'
 import AdminInfoPages from './pages/admin/AdminInfoPages'
 import AdminSocial    from './pages/admin/AdminSocial'
 import AdminLanguages from './pages/admin/AdminLanguages'
+import AdminMedia     from './pages/admin/AdminMedia'
+import AdminHeroCards from './pages/admin/AdminHeroCards'
+import AdminBulkPrice from './pages/admin/AdminBulkPrice'
+import AdminImport    from './pages/admin/AdminImport'
 import SuperLayout    from './pages/super/SuperLayout'
 import SuperDashboard from './pages/super/SuperDashboard'
 import LoginPage      from './pages/auth/LoginPage'
@@ -69,6 +73,10 @@ export default function App() {
           <Route path="info-pages" element={<AdminInfoPages />} />
           <Route path="social"     element={<AdminSocial />} />
           <Route path="languages"  element={<AdminLanguages />} />
+          <Route path="media"      element={<AdminMedia />} />
+          <Route path="hero-cards" element={<AdminHeroCards />} />
+          <Route path="bulk-price" element={<AdminBulkPrice />} />
+          <Route path="import"     element={<AdminImport />} />
         </Route>
 
         {/* Super Admin */}
