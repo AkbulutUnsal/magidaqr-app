@@ -25,6 +25,11 @@ export default function OrderStatus() {
   const [waiterSent, setWaiterSent] = useState(false)
   const [billSent, setBillSent] = useState(false)
   const [restaurant, setRestaurant] = useState(null)
+  const [survey, setSurvey] = useState(null)
+  const [rating, setRating] = useState(0)
+  const [hover, setHover] = useState(0)
+  const [comment, setComment] = useState('')
+  const [surveyDone, setSurveyDone] = useState(false)
 
   useEffect(() => {
     supabase.from('orders')
@@ -33,6 +38,12 @@ export default function OrderStatus() {
       .then(({ data }) => {
         setOrder(data)
         setRestaurant(data?.restaurant)
+        if (data?.restaurant?.id) {
+          supabase.from('surveys').select('*')
+            .eq('restaurant_id', data.restaurant.id).eq('is_active', true)
+            .order('created_at', { ascending:false }).limit(1).maybeSingle()
+            .then(({ data: s }) => setSurvey(s))
+        }
       })
 
     const channel = supabase.channel(`order-${orderId}`)
@@ -59,6 +70,18 @@ export default function OrderStatus() {
       if (type === 'waiter') setWaiterSent(false)
       if (type === 'bill') setBillSent(false)
     }, 5000)
+  }
+
+  async function submitSurvey() {
+    if (!rating || !restaurant) return
+    await supabase.from('survey_responses').insert({
+      survey_id: survey?.id || null,
+      restaurant_id: restaurant.id,
+      rating,
+      comment: comment.trim() || null,
+      table_id: order?.table_id || null
+    })
+    setSurveyDone(true)
   }
 
   if (!order) return (
@@ -191,6 +214,54 @@ export default function OrderStatus() {
               onMouseOut={e=>{e.currentTarget.style.borderColor='#e8e8e4';e.currentTarget.style.color='#666'}}>
               + {lang==='tr'?'Yeni Sipariş Ver':lang==='ka'?'ახალი შეკვეთა':'New Order'}
             </button>
+
+            {/* Anket / Değerlendirme */}
+            <div style={{background:'#fff',borderRadius:16,padding:'20px',marginTop:4,
+              boxShadow:'0 2px 12px rgba(0,0,0,.06)',textAlign:'center'}}>
+              {surveyDone ? (
+                <div style={{padding:'8px 0'}}>
+                  <div style={{fontSize:32,marginBottom:6}}>🙏</div>
+                  <p style={{fontSize:14,fontWeight:600,color:brand}}>
+                    {lang==='tr'?'Değerlendirmeniz için teşekkürler!':
+                     lang==='ka'?'მადლობა შეფასებისთვის!':
+                     lang==='ru'?'Спасибо за отзыв!':'Thanks for your feedback!'}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <p style={{fontSize:14,fontWeight:700,color:'#333',marginBottom:14}}>
+                    {survey ? n(survey,'question') :
+                     (lang==='tr'?'Deneyiminizi değerlendirin':
+                      lang==='ka'?'შეაფასეთ თქვენი გამოცდილება':
+                      lang==='ru'?'Оцените ваш опыт':'Rate your experience')}
+                  </p>
+                  <div style={{display:'flex',justifyContent:'center',gap:6,marginBottom:14}}>
+                    {[1,2,3,4,5].map(star => (
+                      <button key={star} onClick={()=>setRating(star)}
+                        onMouseEnter={()=>setHover(star)} onMouseLeave={()=>setHover(0)}
+                        style={{background:'none',border:'none',cursor:'pointer',fontSize:34,padding:0,
+                          color:(hover||rating)>=star?'#f59e0b':'#e0e0e0',transition:'color .15s'}}>
+                        ★
+                      </button>
+                    ))}
+                  </div>
+                  {rating > 0 && (
+                    <div style={{animation:'fadeUp .3s ease'}}>
+                      <textarea value={comment} onChange={e=>setComment(e.target.value)}
+                        placeholder={lang==='tr'?'Yorumunuz (opsiyonel)':lang==='ka'?'კომენტარი (არასავალდებულო)':lang==='ru'?'Комментарий (необязательно)':'Comment (optional)'}
+                        rows={2} style={{width:'100%',padding:'10px 12px',border:'1px solid #e8e8e4',
+                          borderRadius:10,fontSize:13,resize:'none',fontFamily:'inherit',marginBottom:10,
+                          boxSizing:'border-box'}} />
+                      <button onClick={submitSurvey}
+                        style={{width:'100%',padding:'12px',background:brand,color:'#fff',border:'none',
+                          borderRadius:12,fontSize:14,fontWeight:700,cursor:'pointer'}}>
+                        {lang==='tr'?'Gönder':lang==='ka'?'გაგზავნა':lang==='ru'?'Отправить':'Submit'}
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         )}
 

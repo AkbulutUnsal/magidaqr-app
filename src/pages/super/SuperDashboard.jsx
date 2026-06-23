@@ -40,7 +40,8 @@ export default function SuperDashboard() {
     try {
       const { data: tenant, error: te } = await supabase
         .from('tenants')
-        .insert({ name, plan: form.plan, slug, is_active: true, ai_addon: form.ai_addon })
+        .insert({ name, plan: form.plan, slug, is_active: true, ai_addon: form.ai_addon,
+          plan_expires_at: new Date(Date.now() + 14*24*60*60*1000).toISOString() })
         .select().single()
       if (te) throw te
 
@@ -210,21 +211,46 @@ export default function SuperDashboard() {
                     </span>
                   </td>
                   <td style={{padding:'14px 16px'}}>
-                    <span style={{fontSize:11,fontWeight:700,color:t.is_active?'#1D9E75':'#ef4444',background:t.is_active?'#e8f5ee':'#fef2f2',padding:'3px 10px',borderRadius:20}}>
-                      {t.is_active ? 'Aktif' : 'Pasif'}
-                    </span>
+                    {(() => {
+                      const exp = t.plan_expires_at ? new Date(t.plan_expires_at) : null
+                      const daysLeft = exp ? Math.ceil((exp - Date.now())/(24*60*60*1000)) : null
+                      const expired = daysLeft !== null && daysLeft < 0
+                      if (!t.is_active) return (
+                        <span style={{fontSize:11,fontWeight:700,color:'#ef4444',background:'#fef2f2',padding:'3px 10px',borderRadius:20}}>Pasif</span>
+                      )
+                      if (expired) return (
+                        <span style={{fontSize:11,fontWeight:700,color:'#ef4444',background:'#fef2f2',padding:'3px 10px',borderRadius:20}} title={exp.toLocaleDateString('tr-TR')}>⏰ Süresi doldu</span>
+                      )
+                      if (daysLeft !== null && daysLeft <= 14) return (
+                        <span style={{fontSize:11,fontWeight:700,color:'#f59e0b',background:'#fff8e8',padding:'3px 10px',borderRadius:20}} title={exp.toLocaleDateString('tr-TR')}>⏳ {daysLeft} gün</span>
+                      )
+                      return (
+                        <span style={{fontSize:11,fontWeight:700,color:'#1D9E75',background:'#e8f5ee',padding:'3px 10px',borderRadius:20}} title={exp?exp.toLocaleDateString('tr-TR'):''}>Aktif</span>
+                      )
+                    })()}
                   </td>
                   <td style={{padding:'14px 16px',fontSize:12,color:'#aaa'}}>
                     {new Date(t.created_at).toLocaleDateString('tr-TR')}
                   </td>
                   <td style={{padding:'14px 16px'}}>
-                    <button onClick={async()=>{
-                        await supabase.from('tenants').update({is_active:!t.is_active}).eq('id',t.id)
-                        loadTenants()
-                      }}
-                      style={{fontSize:11,fontWeight:600,color:t.is_active?'#ef4444':'#1D9E75',background:'transparent',border:`1px solid ${t.is_active?'#fecaca':'#bbf7d0'}`,padding:'5px 12px',borderRadius:8,cursor:'pointer'}}>
-                      {t.is_active ? 'Durdur' : 'Aktifleştir'}
-                    </button>
+                    <div style={{display:'flex',gap:6}}>
+                      <button onClick={async()=>{
+                          const base = t.plan_expires_at && new Date(t.plan_expires_at) > new Date()
+                            ? new Date(t.plan_expires_at) : new Date()
+                          base.setFullYear(base.getFullYear() + 1)
+                          await supabase.from('tenants').update({ plan_expires_at: base.toISOString(), is_active: true }).eq('id', t.id)
+                          loadTenants()
+                        }}
+                        style={{fontSize:11,fontWeight:600,color:'#1D9E75',background:'#e8f5ee',border:'1px solid #bbf7d0',padding:'5px 10px',borderRadius:8,cursor:'pointer',whiteSpace:'nowrap'}}
+                        title="Aboneliği 1 yıl uzat">+1 yıl</button>
+                      <button onClick={async()=>{
+                          await supabase.from('tenants').update({is_active:!t.is_active}).eq('id',t.id)
+                          loadTenants()
+                        }}
+                        style={{fontSize:11,fontWeight:600,color:t.is_active?'#ef4444':'#1D9E75',background:'transparent',border:`1px solid ${t.is_active?'#fecaca':'#bbf7d0'}`,padding:'5px 12px',borderRadius:8,cursor:'pointer'}}>
+                        {t.is_active ? 'Durdur' : 'Aktifleştir'}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               )
