@@ -6,7 +6,7 @@ export const PLANS = {
     key: 'basic',
     name: 'Temel',
     name_en: 'Basic',
-    price: 350,          // GEL / yıl
+    price: 480,          // GEL / yıl
     currency: '₾',
     period: 'yıl',
     color: '#1D9E75',
@@ -30,7 +30,7 @@ export const PLANS = {
     key: 'advanced',
     name: 'Gelişmiş',
     name_en: 'Advanced',
-    price: 700,
+    price: 900,
     currency: '₾',
     period: 'yıl',
     color: '#8b5cf6',
@@ -50,7 +50,7 @@ export const PLANS = {
 
 export const AI_ADDON = {
   name: 'AI Asistan',
-  price: 250,          // GEL / yıl
+  price: 300,          // GEL / yıl
   currency: '₾',
   period: 'yıl',
   features: [
