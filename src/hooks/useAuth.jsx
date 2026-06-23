@@ -9,19 +9,33 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
-      else setLoading(false)
-    })
+    let active = true
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!active) return
       setUser(session?.user ?? null)
       if (session?.user) fetchProfile(session.user.id)
       else { setProfile(null); setLoading(false) }
     })
 
-    return () => subscription.unsubscribe()
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!active) return
+
+      setUser(session?.user ?? null)
+
+      if (event === 'SIGNED_OUT' || !session?.user) {
+        setProfile(null)
+        setLoading(false)
+        return
+      }
+
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        fetchProfile(session.user.id)
+      }
+      // TOKEN_REFRESHED / USER_UPDATED: profile zaten var, tekrar çekme
+    })
+
+    return () => { active = false; subscription.unsubscribe() }
   }, [])
 
   async function fetchProfile(userId) {
