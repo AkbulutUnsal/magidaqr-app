@@ -11,6 +11,7 @@ export default function AdminMenu() {
   const [activeTab, setActiveTab] = useState('items')
   const [editItem, setEditItem] = useState(null)
   const [showForm, setShowForm] = useState(false)
+  const [allergens, setAllergens] = useState([])
 
   useEffect(() => { if (profile?.restaurant_id) load() }, [profile?.restaurant_id])
 
@@ -19,8 +20,11 @@ export default function AdminMenu() {
       .select('*').eq('restaurant_id', profile.restaurant_id).order('sort_order')
     const { data: its } = await supabase.from('menu_items')
       .select('*, category:menu_categories(name_en)').eq('restaurant_id', profile.restaurant_id).order('sort_order')
+    const { data: alg } = await supabase.from('allergens')
+      .select('*').eq('restaurant_id', profile.restaurant_id).order('created_at')
     setCategories(cats || [])
     setItems(its || [])
+    setAllergens(alg || [])
   }
 
   async function toggleAvailable(item) {
@@ -108,6 +112,7 @@ export default function AdminMenu() {
         <ItemFormModal
           item={editItem}
           categories={categories}
+          allergens={allergens}
           onSave={saveItem}
           onClose={() => { setShowForm(false); setEditItem(null) }}
           t={t}
@@ -152,15 +157,23 @@ function CategoriesTab({ categories, restaurantId, onRefresh, t }) {
   )
 }
 
-function ItemFormModal({ item, categories, onSave, onClose, t }) {
+function ItemFormModal({ item, categories, allergens, onSave, onClose, t }) {
   const [form, setForm] = useState({
     name_ka: item?.name_ka || '', name_en: item?.name_en || '',
     name_tr: item?.name_tr || '', name_ru: item?.name_ru || '',
     description_en: item?.description_en || '',
     price: item?.price || '', category_id: item?.category_id || '',
     image_url: item?.image_url || '', is_available: item?.is_available ?? true,
-    is_featured: item?.is_featured ?? false, goes_to_kitchen: item?.goes_to_kitchen ?? true
+    is_featured: item?.is_featured ?? false, goes_to_kitchen: item?.goes_to_kitchen ?? true,
+    allergen_ids: item?.allergen_ids || []
   })
+
+  const toggleAllergen = (id) => setForm(p => ({
+    ...p,
+    allergen_ids: p.allergen_ids.includes(id)
+      ? p.allergen_ids.filter(x => x !== id)
+      : [...p.allergen_ids, id]
+  }))
 
   const set = (k, v) => setForm(p => ({...p, [k]: v}))
 
@@ -201,6 +214,32 @@ function ItemFormModal({ item, categories, onSave, onClose, t }) {
             <label>Görsel URL</label>
             <input value={form.image_url} onChange={e => set('image_url', e.target.value)} />
           </div>
+          {allergens.length > 0 && (
+            <div className="form-group">
+              <label>Alerjenler</label>
+              <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginTop:4 }}>
+                {allergens.map(a => {
+                  const on = form.allergen_ids.includes(a.id)
+                  return (
+                    <button type="button" key={a.id} onClick={() => toggleAllergen(a.id)}
+                      style={{ display:'flex', alignItems:'center', gap:5, padding:'7px 12px',
+                        borderRadius:20, fontSize:13, fontWeight:600, cursor:'pointer',
+                        border:`1.5px solid ${on ? '#dc2626' : '#e8e8e4'}`,
+                        background: on ? '#fef2f2' : '#fff',
+                        color: on ? '#dc2626' : '#888' }}>
+                      <span>{a.icon}</span>{a.name_tr || a.name_en}
+                      {on && ' ✓'}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+          {allergens.length === 0 && (
+            <p style={{ fontSize:12, color:'#bbb', margin:'4px 0 12px' }}>
+              Alerjen tanımlamak için önce "Alerjenler" sayfasından ekleyin.
+            </p>
+          )}
           <div className="form-checks">
             <label><input type="checkbox" checked={form.is_available} onChange={e => set('is_available', e.target.checked)} /> Mevcut</label>
             <label><input type="checkbox" checked={form.is_featured} onChange={e => set('is_featured', e.target.checked)} /> Öne çıkan</label>
