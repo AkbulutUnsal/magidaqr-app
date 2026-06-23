@@ -49,7 +49,7 @@ export default function OrderStatus() {
       restaurant_id: restaurant.id,
       table_id: order.table_id,
       type,
-      call_status: 'pending'
+      status: 'pending'
     })
     setTimeout(() => setCallSent(null), 5000)
   }

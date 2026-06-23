@@ -95,15 +95,20 @@ export default function MenuPage() {
     navigate(`/order/${order.id}`)
   }
 
+  const [sending, setSending] = useState(false)
   const sendCall = async (type) => {
-    if (!restaurant || !tableId || callSent) return
-    setCallSent(type) // önce state'i set et, çift tıklamayı engelle
-    await supabase.from('table_calls').insert({ 
-      restaurant_id: restaurant.id, 
-      table_id: tableId, 
-      type,
-      call_status: 'pending'
-    })
+    if (!restaurant || !tableId || callSent || sending) return
+    setSending(true)
+    setCallSent(type)
+    try {
+      await supabase.from('table_calls').insert({ 
+        restaurant_id: restaurant.id, 
+        table_id: tableId, 
+        type,
+        status: 'pending'
+      })
+    } catch(e) { console.error(e) }
+    setSending(false)
     setTimeout(() => setCallSent(null), 5000)
   }
 
@@ -551,7 +556,7 @@ function BottomBar({ brand, callSent, sendCall, cartCount, cartTotal, setCartOpe
         boxShadow:'0 -4px 24px rgba(0,0,0,0.1)' }}>
 
         {/* Garson */}
-        <button onClick={() => !callSent && sendCall('waiter')} disabled={!!callSent}
+        <button onClick={(e) => { e.preventDefault(); !callSent && sendCall('waiter') }} disabled={!!callSent}
           style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:3,
             padding:'8px 4px', borderRadius:14, border:'none', cursor:callSent?'default':'pointer',
             background:callSent==='waiter'?'#f4f4f4':'#E1F5EE',
@@ -584,7 +589,7 @@ function BottomBar({ brand, callSent, sendCall, cartCount, cartTotal, setCartOpe
         </button>
 
         {/* Hesap */}
-        <button onClick={() => !callSent && sendCall('bill')} disabled={!!callSent}
+        <button onClick={(e) => { e.preventDefault(); !callSent && sendCall('bill') }} disabled={!!callSent}
           style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:3,
             padding:'8px 4px', borderRadius:14, border:'none', cursor:callSent?'default':'pointer',
             background:callSent==='bill'?'#f4f4f4':'#FAEEDA',

@@ -56,7 +56,7 @@ export default function WaiterPanel() {
       .from('table_calls')
       .select('*, tables(table_number, label)')
       .eq('restaurant_id', rid)
-      .eq('call_status', 'pending')
+      .eq('status', 'pending')
       .order('created_at', { ascending: false })
 
     setCalls(callData || [])
@@ -64,7 +64,7 @@ export default function WaiterPanel() {
   }
 
   async function dismissCall(id) {
-    await supabase.from('table_calls').update({ call_status:'acknowledged' }).eq('id', id)
+    await supabase.from('table_calls').update({ status:'acknowledged' }).eq('id', id)
     loadAll()
   }
 
@@ -154,8 +154,8 @@ export default function WaiterPanel() {
               <>
                 <div style={{display:'flex',justifyContent:'flex-end',marginBottom:12}}>
                   <button onClick={async()=>{
-                    await supabase.from('table_calls').update({call_status:'acknowledged'})
-                      .eq('restaurant_id',profile.restaurant_id).eq('call_status','pending')
+                    await supabase.from('table_calls').update({status:'acknowledged'})
+                      .eq('restaurant_id',profile.restaurant_id).eq('status','pending')
                     loadAll()
                   }} style={{fontSize:11,color:'#666',background:'transparent',border:'1px solid #333',
                     padding:'5px 12px',borderRadius:8,cursor:'pointer'}}>
