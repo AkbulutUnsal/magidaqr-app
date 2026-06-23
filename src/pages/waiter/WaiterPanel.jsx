@@ -40,16 +40,9 @@ export default function WaiterPanel() {
       .in('status', ['pending', 'preparing', 'ready'])
       .order('created_at', { ascending: true })
 
-    // Garsona görünecek siparişler:
-    // - "ready" olanlar (mutfaktan çıktı)
-    // - içecek içeren pending/preparing (mutfağa gitmeyen ürünler)
-    const waiterOrders = (allOrders || []).filter(order => {
-      if (order.status === 'ready') return true
-      // pending/preparing ise sadece mutfağa GİTMEYEN ürünü varsa göster
-      return order.order_items?.some(oi => oi.menu_item?.goes_to_kitchen === false)
-    })
+    // Tüm siparişler garsona görünsün
 
-    setOrders(waiterOrders)
+    setOrders(allOrders || [])
 
     // 2. Çağrılar
     const { data: callData } = await supabase
@@ -232,12 +225,15 @@ export default function WaiterPanel() {
             ) : (
               <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:14}}>
                 {orders.map((order,idx)=>{
-                  const items = getWaiterItems(order)
                   const isReady = order.status === 'ready'
-                  const isDrinkOnly = order.order_items?.every(oi => oi.menu_item?.goes_to_kitchen === false)
+                  const isPreparing = order.status === 'preparing'
+                  const isPending = order.status === 'pending'
+                  const borderColor = isReady ? '#1D9E75' : isPreparing ? '#f59e0b' : '#3b82f6'
+                  const accentColor = isReady ? '#1D9E75' : isPreparing ? '#f59e0b' : '#3b82f6'
+                  const statusLabel = isReady ? '✓ HAZIR' : isPreparing ? '🔥 HAZIRLANIYOR' : '⏳ BEKLİYOR'
                   return (
                     <div key={order.id}
-                      style={{background:'#1a1a1a',border:`1px solid ${isReady?'#1D9E75':'#f59e0b'}`,
+                      style={{background:'#1a1a1a',border:`1px solid ${borderColor}`,
                         borderRadius:14,overflow:'hidden',animation:`fadeIn .3s ease ${idx*.05}s both`}}>
                       <div style={{background:'#222',padding:'12px 16px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                         <div>
@@ -249,16 +245,15 @@ export default function WaiterPanel() {
                           </p>
                         </div>
                         <span style={{fontSize:10,fontWeight:700,padding:'3px 10px',borderRadius:20,
-                          color:isReady?'#1D9E75':'#f59e0b',
-                          background:isReady?'#1D9E7522':'#f59e0b22'}}>
-                          {isReady ? '✓ HAZIR' : isDrinkOnly ? '🥤 İÇECEK' : '⏳ BEKLİYOR'}
+                          color:accentColor, background:accentColor+'22'}}>
+                          {statusLabel}
                         </span>
                       </div>
                       <div style={{padding:'12px 16px'}}>
-                        {items?.map(oi=>(
+                        {order.order_items?.map(oi=>(
                           <div key={oi.id} style={{display:'flex',alignItems:'center',gap:8,
                             padding:'6px 0',borderBottom:'1px solid #222'}}>
-                            <span style={{width:22,height:22,background:isReady?'#1D9E75':'#f59e0b',
+                            <span style={{width:22,height:22,background:accentColor,
                               borderRadius:6,display:'flex',alignItems:'center',justifyContent:'center',
                               fontSize:11,fontWeight:700,color:'#fff',flexShrink:0}}>
                               {oi.quantity}
@@ -270,16 +265,17 @@ export default function WaiterPanel() {
                         ))}
                       </div>
                       <div style={{padding:'0 16px 14px'}}>
-                        <button onClick={()=>serveOrder(order.id)}
-                          style={{width:'100%',background:isReady?'#1D9E75':'#f59e0b',
-                            color:isReady?'#fff':'#000',border:'none',padding:'11px',borderRadius:10,
-                            fontSize:13,fontWeight:700,cursor:'pointer'}}>
-                          ✓ Servis Edildi
+                        <button onClick={()=>isReady && serveOrder(order.id)}
+                          disabled={!isReady}
+                          style={{width:'100%',background:isReady?'#1D9E75':'#2a2a2a',
+                            color:isReady?'#fff':'#555',border:`1px solid ${isReady?'#1D9E75':'#333'}`,
+                            padding:'11px',borderRadius:10,fontSize:13,fontWeight:700,
+                            cursor:isReady?'pointer':'not-allowed',opacity:isReady?1:0.6}}>
+                          {isReady ? '✓ Servis Edildi' : isPreparing ? '🔥 Mutfakta Hazırlanıyor' : '⏳ Mutfak Bekliyor'}
                         </button>
                       </div>
                     </div>
                   )
-                })}
               </div>
             )}
           </div>
