@@ -7,6 +7,7 @@ const ROLE_COLORS = { kitchen:'#534AB7', waiter:'#1D9E75', admin:'#E24B4A' }
 
 export default function AdminStaff() {
   const { profile } = useAuth()
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
   const [staff, setStaff] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -191,9 +192,9 @@ VALUES (
       <div style={{ marginTop:20, background:'#E1F5EE', border:'1px solid #1D9E75', borderRadius:10, padding:14, maxWidth:600 }}>
         <p style={{ fontSize:13, color:'#0F6E56', margin:0, lineHeight:1.6 }}>
           <strong>💡 Personel giriş adresleri:</strong><br/>
-          🛎 Garson: <code>localhost:5173/waiter</code><br/>
-          👨‍🍳 Mutfak: <code>localhost:5173/kitchen</code><br/>
-          ⚙️ Admin: <code>localhost:5173/admin</code>
+          🛎 Garson: <code>{origin}/waiter</code><br/>
+          👨‍🍳 Mutfak: <code>{origin}/kitchen</code><br/>
+          ⚙️ Admin: <code>{origin}/admin</code>
         </p>
       </div>
     </div>
