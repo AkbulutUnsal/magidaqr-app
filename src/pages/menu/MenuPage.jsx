@@ -105,7 +105,7 @@ export default function MenuPage() {
         restaurant_id: restaurant.id, 
         table_id: tableId, 
         type,
-        status: 'pending'
+        status: 'open'
       })
     } catch(e) { console.error(e) }
     setSending(false)
