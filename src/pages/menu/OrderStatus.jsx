@@ -22,7 +22,8 @@ export default function OrderStatus() {
   const lang = i18n.language || 'en'
 
   const [order, setOrder] = useState(null)
-  const [callSent, setCallSent] = useState(null)
+  const [waiterSent, setWaiterSent] = useState(false)
+  const [billSent, setBillSent] = useState(false)
   const [restaurant, setRestaurant] = useState(null)
 
   useEffect(() => {
@@ -43,15 +44,21 @@ export default function OrderStatus() {
   }, [orderId])
 
   const sendCall = async (type) => {
-    if (!restaurant || !order?.table_id || callSent) return
-    setCallSent(type)
+    if (!restaurant || !order?.table_id) return
+    if (type === 'waiter' && waiterSent) return
+    if (type === 'bill' && billSent) return
+    if (type === 'waiter') setWaiterSent(true)
+    if (type === 'bill') setBillSent(true)
     await supabase.from('table_calls').insert({
       restaurant_id: restaurant.id,
       table_id: order.table_id,
       type,
-      status: 'pending'
+      status: 'open'
     })
-    setTimeout(() => setCallSent(null), 5000)
+    setTimeout(() => {
+      if (type === 'waiter') setWaiterSent(false)
+      if (type === 'bill') setBillSent(false)
+    }, 5000)
   }
 
   if (!order) return (
@@ -153,27 +160,27 @@ export default function OrderStatus() {
         {isServed && (
           <div style={{display:'flex',flexDirection:'column',gap:10,animation:'fadeUp .3s ease'}}>
             {/* Garson çağır */}
-            <button onClick={()=>sendCall('waiter')} disabled={!!callSent}
-              style={{padding:'14px',background:callSent==='waiter'?'#e0e0e0':brand,color:'#fff',border:'none',
-                borderRadius:14,fontSize:14,fontWeight:700,cursor:callSent?'default':'pointer',
+            <button onClick={()=>sendCall('waiter')} disabled={type==='waiter'?waiterSent:billSent}
+              style={{padding:'14px',background:waiterSent?'#e0e0e0':brand,color:'#fff',border:'none',
+                borderRadius:14,fontSize:14,fontWeight:700,cursor:waiterSent?'default':'pointer',
                 display:'flex',alignItems:'center',justifyContent:'center',gap:10,
-                boxShadow:callSent?'none':`0 4px 16px ${brand}40`,transition:'all .2s'}}>
+                boxShadow:waiterSent?'none':`0 4px 16px ${brand}40`,transition:'all .2s'}}>
               <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
               </svg>
-              {callSent==='waiter' ? '✓ Gönderildi!' : (WAITER[lang]||WAITER.en)}
+              {waiterSent ? '✓ Gönderildi!' : (WAITER[lang]||WAITER.en)}
             </button>
 
             {/* Hesap iste */}
-            <button onClick={()=>sendCall('bill')} disabled={!!callSent}
-              style={{padding:'14px',background:callSent==='bill'?'#e0e0e0':'#f59e0b',color:'#fff',border:'none',
-                borderRadius:14,fontSize:14,fontWeight:700,cursor:callSent?'default':'pointer',
+            <button onClick={()=>sendCall('bill')} disabled={type==='waiter'?waiterSent:billSent}
+              style={{padding:'14px',background:billSent?'#e0e0e0':'#f59e0b',color:'#fff',border:'none',
+                borderRadius:14,fontSize:14,fontWeight:700,cursor:waiterSent?'default':'pointer',
                 display:'flex',alignItems:'center',justifyContent:'center',gap:10,
-                boxShadow:callSent?'none':'0 4px 16px rgba(245,158,11,.4)',transition:'all .2s'}}>
+                boxShadow:billSent?'none':'0 4px 16px rgba(245,158,11,.4)',transition:'all .2s'}}>
               <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="12" y2="15"/>
               </svg>
-              {callSent==='bill' ? '✓ Gönderildi!' : (BILL[lang]||BILL.en)}
+              {billSent ? '✓ Gönderildi!' : (BILL[lang]||BILL.en)}
             </button>
 
             {/* Yeni sipariş */}
@@ -190,17 +197,17 @@ export default function OrderStatus() {
         {/* Beklenirken de garson çağır butonu */}
         {!isServed && !isCancelled && (
           <div style={{display:'flex',gap:10}}>
-            <button onClick={()=>sendCall('waiter')} disabled={!!callSent}
-              style={{flex:1,padding:'12px',background:'#fff',color:callSent==='waiter'?'#aaa':brand,
-                border:`1.5px solid ${callSent==='waiter'?'#e0e0e0':brand+'40'}`,borderRadius:12,
-                fontSize:13,fontWeight:600,cursor:callSent?'default':'pointer'}}>
-              {callSent==='waiter'?'✓ Gönderildi':(WAITER[lang]||WAITER.en)}
+            <button onClick={()=>sendCall('waiter')} disabled={type==='waiter'?waiterSent:billSent}
+              style={{flex:1,padding:'12px',background:'#fff',color:waiterSent?'#aaa':brand,
+                border:`1.5px solid ${waiterSent?'#e0e0e0':brand+'40'}`,borderRadius:12,
+                fontSize:13,fontWeight:600,cursor:waiterSent?'default':'pointer'}}>
+              {waiterSent?'✓ Gönderildi':(WAITER[lang]||WAITER.en)}
             </button>
-            <button onClick={()=>sendCall('bill')} disabled={!!callSent}
-              style={{flex:1,padding:'12px',background:'#fff',color:callSent==='bill'?'#aaa':'#f59e0b',
-                border:`1.5px solid ${callSent==='bill'?'#e0e0e0':'#f59e0b40'}`,borderRadius:12,
-                fontSize:13,fontWeight:600,cursor:callSent?'default':'pointer'}}>
-              {callSent==='bill'?'✓ Gönderildi':(BILL[lang]||BILL.en)}
+            <button onClick={()=>sendCall('bill')} disabled={type==='waiter'?waiterSent:billSent}
+              style={{flex:1,padding:'12px',background:'#fff',color:billSent?'#aaa':'#f59e0b',
+                border:`1.5px solid ${billSent?'#e0e0e0':'#f59e0b40'}`,borderRadius:12,
+                fontSize:13,fontWeight:600,cursor:billSent?'default':'pointer'}}>
+              {billSent?'✓ Gönderildi':(BILL[lang]||BILL.en)}
             </button>
           </div>
         )}
