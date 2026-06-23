@@ -276,6 +276,7 @@ export default function WaiterPanel() {
                       </div>
                     </div>
                   )
+                })}
               </div>
             )}
           </div>
