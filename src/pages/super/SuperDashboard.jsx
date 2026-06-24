@@ -327,6 +327,17 @@ export default function SuperDashboard() {
                   <td style={{padding:'14px 16px'}}>
                     <div style={{display:'flex',gap:6}}>
                       <button onClick={async()=>{
+                          await supabase.from('tenants').update({ ai_addon: !t.ai_addon }).eq('id', t.id)
+                          loadTenants()
+                        }}
+                        style={{fontSize:11,fontWeight:600,color:t.ai_addon?'#8b5cf6':'#aaa',
+                          background:t.ai_addon?'#f5f3ff':'#f9f9f7',
+                          border:`1px solid ${t.ai_addon?'#ddd6fe':'#eee'}`,
+                          padding:'5px 10px',borderRadius:8,cursor:'pointer',whiteSpace:'nowrap'}}
+                        title={t.ai_addon?'AI eklentisini kapat':'AI eklentisini aç'}>
+                        ✨ AI {t.ai_addon?'✓':''}
+                      </button>
+                      <button onClick={async()=>{
                           const base = t.plan_expires_at && new Date(t.plan_expires_at) > new Date()
                             ? new Date(t.plan_expires_at) : new Date()
                           base.setFullYear(base.getFullYear() + 1)
