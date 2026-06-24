@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { PLANS, AI_ADDON } from '../../lib/plans'
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 
 export default function SuperDashboard() {
   const [tenants, setTenants] = useState([])
@@ -66,6 +67,52 @@ export default function SuperDashboard() {
 
   if (loading) return <div style={{textAlign:'center',padding:64,color:'#aaa'}}>Yükleniyor...</div>
 
+  // ── İş metrikleri ──
+  const now = Date.now()
+  const active = tenants.filter(t => t.is_active)
+  const basicCount = tenants.filter(t => t.plan === 'basic').length
+  const advancedCount = tenants.filter(t => t.plan === 'advanced').length
+  const aiCount = tenants.filter(t => t.ai_addon).length
+  // Deneme: 14 günden az kalan + aktif
+  const trialCount = active.filter(t => {
+    if (!t.plan_expires_at) return false
+    const d = Math.ceil((new Date(t.plan_expires_at) - now)/(864e5))
+    return d >= 0 && d <= 14
+  }).length
+  // Süresi dolan
+  const expiredCount = tenants.filter(t => {
+    if (!t.plan_expires_at) return false
+    return new Date(t.plan_expires_at) < now
+  }).length
+  // Yıllık gelir (aktif abonelikler)
+  let annualRevenue = 0
+  active.forEach(t => {
+    annualRevenue += (t.plan === 'advanced' ? PLANS.advanced.price : PLANS.basic.price)
+    if (t.ai_addon) annualRevenue += AI_ADDON.price
+  })
+  // Bu ay yeni
+  const monthAgo = now - 30*864e5
+  const newThisMonth = tenants.filter(t => new Date(t.created_at).getTime() > monthAgo).length
+  const prevMonthStart = now - 60*864e5
+  const newPrevMonth = tenants.filter(t => {
+    const c = new Date(t.created_at).getTime()
+    return c > prevMonthStart && c <= monthAgo
+  }).length
+  const newTrend = newPrevMonth ? Math.round((newThisMonth-newPrevMonth)/newPrevMonth*100) : (newThisMonth>0?100:0)
+
+  // Son 6 ay yeni kayıt grafiği
+  const growthData = []
+  for (let i=5;i>=0;i--){
+    const d = new Date(); d.setMonth(d.getMonth()-i); d.setDate(1); d.setHours(0,0,0,0)
+    const d2 = new Date(d); d2.setMonth(d2.getMonth()+1)
+    const mo = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'][d.getMonth()]
+    const count = tenants.filter(t => {
+      const c = new Date(t.created_at).getTime()
+      return c >= d.getTime() && c < d2.getTime()
+    }).length
+    growthData.push({ month: mo, firma: count })
+  }
+
   return (
     <div style={{maxWidth:1000,margin:'0 auto'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:24}}>
@@ -77,6 +124,51 @@ export default function SuperDashboard() {
           style={{background:'#1D9E75',color:'#fff',border:'none',padding:'10px 20px',borderRadius:10,fontSize:13,fontWeight:700,cursor:'pointer'}}>
           + Firma Ekle
         </button>
+      </div>
+
+      {/* ── Gelir banner ── */}
+      <div style={{background:'linear-gradient(135deg,#0d5e48,#1D9E75,#2db88a)',borderRadius:16,padding:'24px 28px',marginBottom:16,position:'relative',overflow:'hidden'}}>
+        <div style={{position:'absolute',right:-30,top:-30,width:200,height:200,borderRadius:'50%',background:'rgba(255,255,255,.05)'}}/>
+        <p style={{fontSize:11,color:'rgba(255,255,255,.65)',fontWeight:600,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:4}}>Tahmini Yıllık Gelir (ARR)</p>
+        <h1 style={{fontSize:34,fontWeight:900,color:'#fff',marginBottom:4}}>{annualRevenue.toLocaleString('tr-TR')} ₾</h1>
+        <p style={{fontSize:13,color:'rgba(255,255,255,.8)'}}>{active.length} aktif abonelik · aylık ≈ {Math.round(annualRevenue/12).toLocaleString('tr-TR')} ₾</p>
+      </div>
+
+      {/* ── KPI kartları ── */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:16}}>
+        <SuperKPI label="TOPLAM FİRMA" val={tenants.length} sub={`${active.length} aktif`} color="#1D9E75"/>
+        <SuperKPI label="BU AY YENİ" val={newThisMonth} trend={newTrend} sub="son 30 gün" color="#3b82f6"/>
+        <SuperKPI label="DENEMEDE" val={trialCount} sub="≤14 gün kalan" color="#f59e0b"/>
+        <SuperKPI label="SÜRESİ DOLAN" val={expiredCount} sub="yenileme bekliyor" color="#ef4444"/>
+      </div>
+
+      {/* ── Paket dağılımı + Büyüme grafiği ── */}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1.3fr',gap:16,marginBottom:24}}>
+        <div style={{background:'#fff',border:'1px solid #e8e8e4',borderRadius:14,padding:20}}>
+          <h3 style={{fontSize:14,fontWeight:700,marginBottom:16}}>Paket Dağılımı</h3>
+          <SuperPlanRow label="Temel" count={basicCount} total={tenants.length} color="#1D9E75"/>
+          <SuperPlanRow label="Gelişmiş" count={advancedCount} total={tenants.length} color="#8b5cf6"/>
+          <div style={{marginTop:14,paddingTop:14,borderTop:'1px solid #f0f0ee',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <span style={{fontSize:13,color:'#666'}}>✨ AI eklentili</span>
+            <span style={{fontSize:14,fontWeight:700,color:'#8b5cf6'}}>{aiCount} firma</span>
+          </div>
+        </div>
+        <div style={{background:'#fff',border:'1px solid #e8e8e4',borderRadius:14,padding:20}}>
+          <h3 style={{fontSize:14,fontWeight:700,marginBottom:4}}>Firma Büyümesi</h3>
+          <p style={{fontSize:12,color:'#aaa',marginBottom:12}}>Son 6 ay yeni kayıt</p>
+          <ResponsiveContainer width="100%" height={130}>
+            <AreaChart data={growthData} margin={{top:0,right:0,left:-25,bottom:0}}>
+              <defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#1D9E75" stopOpacity={0.25}/>
+                <stop offset="95%" stopColor="#1D9E75" stopOpacity={0}/>
+              </linearGradient></defs>
+              <XAxis dataKey="month" tick={{fontSize:10,fill:'#bbb'}} tickLine={false} axisLine={false}/>
+              <YAxis tick={{fontSize:10,fill:'#bbb'}} tickLine={false} axisLine={false} allowDecimals={false}/>
+              <Tooltip contentStyle={{border:'1px solid #e8e8e4',borderRadius:8,fontSize:12}}/>
+              <Area type="monotone" dataKey="firma" stroke="#1D9E75" strokeWidth={2} fill="url(#sg)" dot={{r:3,fill:'#1D9E75'}}/>
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {msg && (
@@ -257,6 +349,38 @@ export default function SuperDashboard() {
             })}
           </tbody>
         </table>
+      </div>
+    </div>
+  )
+}
+
+function SuperKPI({ label, val, trend, sub, color }) {
+  return (
+    <div style={{background:'#fff',border:'1px solid #e8e8e4',borderRadius:12,padding:16}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+        <p style={{fontSize:10,fontWeight:700,color:'#aaa',textTransform:'uppercase',letterSpacing:'.05em'}}>{label}</p>
+        {trend!==undefined && (
+          <span style={{fontSize:10,fontWeight:700,color:trend>=0?'#1D9E75':'#ef4444',background:trend>=0?'#e8f5ee':'#fef2f2',padding:'2px 7px',borderRadius:20}}>
+            {trend>=0?'↗':'↘'} %{Math.abs(trend)}
+          </span>
+        )}
+      </div>
+      <p style={{fontSize:26,fontWeight:900,color,lineHeight:1}}>{val}</p>
+      <p style={{fontSize:11,color:'#bbb',marginTop:4}}>{sub}</p>
+    </div>
+  )
+}
+
+function SuperPlanRow({ label, count, total, color }) {
+  const pct = total ? Math.round(count/total*100) : 0
+  return (
+    <div style={{marginBottom:12}}>
+      <div style={{display:'flex',justifyContent:'space-between',marginBottom:5}}>
+        <span style={{fontSize:13,color:'#444'}}>{label}</span>
+        <span style={{fontSize:13,fontWeight:700,color}}>{count} (%{pct})</span>
+      </div>
+      <div style={{height:8,background:'#f0f0ee',borderRadius:4,overflow:'hidden'}}>
+        <div style={{width:`${pct}%`,height:'100%',background:color,borderRadius:4}}/>
       </div>
     </div>
   )
