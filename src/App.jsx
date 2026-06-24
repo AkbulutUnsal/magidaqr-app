@@ -11,6 +11,7 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminMenu      from './pages/admin/AdminMenu'
 import AdminTables    from './pages/admin/AdminTables'
 import AdminReports   from './pages/admin/AdminReports'
+import AdminAnalytics from './pages/admin/AdminAnalytics'
 import AdminSettings  from './pages/admin/AdminSettings'
 import AdminQR       from './pages/admin/AdminQR'
 import AdminStaff     from './pages/admin/AdminStaff'
@@ -73,7 +74,7 @@ export default function App() {
           <Route path="reports"    element={<AdminReports />} />
           <Route path="settings"   element={<AdminSettings />} />
           <Route path="staff"      element={<AdminStaff />} />
-          <Route path="analytics"  element={<AdminReports />} />
+          <Route path="analytics"  element={<AdminAnalytics />} />
           <Route path="qr"         element={<AdminQR />} />
           <Route path="orders"     element={<AdminDashboard />} />
           <Route path="allergens"  element={<AdminAllergens />} />

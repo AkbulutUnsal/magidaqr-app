@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { track, trackOnce } from '../../lib/analytics'
 import { supabase } from '../../lib/supabase'
 import CartDrawer from '../../components/CartDrawer'
 
@@ -65,6 +66,10 @@ export default function MenuPage() {
       setAllergens(allergData || [])
       setInfoPages(infoData || [])
       setLoading(false)
+
+      // ── Analitik: menü açıldı + sayfa görüntülendi ──
+      track(rest.id, 'menu_open', {}, { tableId, lang })
+      track(rest.id, 'page_view', { page: 'menu' }, { tableId, lang })
     }
     load()
   }, [restaurantSlug, tableId])
@@ -107,6 +112,7 @@ export default function MenuPage() {
       .select().single()
     if (error || !order) { setPlacing(false); return alert(t('error')) }
     await supabase.from('order_items').insert(cart.map(c => ({ order_id: order.id, menu_item_id: c.id, quantity: c.qty, unit_price: c.price })))
+    track(restaurant.id, 'order_placed', { order_id: order.id, total: cartTotal, items: cart.length }, { tableId, lang })
     setCart([]); setCartOpen(false)
     setPlacing(false)
     navigate(`/order/${order.id}`)
@@ -132,8 +138,14 @@ export default function MenuPage() {
     }, 5000)
   }
 
+  const openDetail = (item) => {
+    setDetailItem(item)
+    if (restaurant) trackOnce(restaurant.id, 'item_view', { item_id: item.id }, { tableId, lang })
+  }
+
   const selectCategory = (id) => {
     setActiveCategory(id)
+    if (id && restaurant) trackOnce(restaurant.id, 'category_view', { category_id: id }, { tableId, lang })
     setTimeout(() => {
       const el = id ? document.getElementById(`cat-${id}`) : document.getElementById('menu-start')
       el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -344,7 +356,7 @@ export default function MenuPage() {
               scrollbarWidth:'none', WebkitOverflowScrolling:'touch' }}>
               {featuredItems.map(item => (
                 <div key={item.id} className="item-card"
-                  onClick={() => setDetailItem(item)}
+                  onClick={() => openDetail(item)}
                   style={{ flexShrink:0, width:160, background:'#fff', borderRadius:18,
                     overflow:'hidden', cursor:'pointer', boxShadow:'0 4px 16px rgba(0,0,0,0.08)',
                     animation:'fadeUp 0.4s ease' }}>
@@ -388,7 +400,7 @@ export default function MenuPage() {
                 <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
                   {catItems.map((item, idx) => (
                     <div key={item.id} className="item-card"
-                      onClick={() => setDetailItem(item)}
+                      onClick={() => openDetail(item)}
                       style={{ background:'#fff', borderRadius:18, overflow:'hidden', cursor:'pointer',
                         boxShadow:'0 2px 12px rgba(0,0,0,0.06)',
                         display:'flex', animation:`fadeUp 0.4s ease ${idx*0.05}s both` }}>
