@@ -5,7 +5,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 
 export default function AdminDashboard() {
   const { profile } = useAuth()
-  const [stats, setStats] = useState({ today:0, week:0, total:0, items:0 })
+  const [stats, setStats] = useState({ today:0, week:0, total:0, items:0, yesterday:0, prevWeek:0 })
   const [topItems, setTopItems] = useState([])
   const [recentOrders, setRecentOrders] = useState([])
   const [chartData, setChartData] = useState([])
@@ -21,15 +21,20 @@ export default function AdminDashboard() {
     const rid = rest.id
 
     const today = new Date(); today.setHours(0,0,0,0)
+    const yesterday = new Date(today); yesterday.setDate(yesterday.getDate()-1)
     const week  = new Date(); week.setDate(week.getDate()-7)
+    const prevWeekStart = new Date(); prevWeekStart.setDate(prevWeekStart.getDate()-14)
+    const prevWeekEnd = new Date(); prevWeekEnd.setDate(prevWeekEnd.getDate()-7)
 
-    const [{ count: todayC }, { count: weekC }, { count: totalC }, { count: itemsC }] = await Promise.all([
+    const [{ count: todayC }, { count: weekC }, { count: totalC }, { count: itemsC }, { count: yesterdayC }, { count: prevWeekC }] = await Promise.all([
       supabase.from('orders').select('*',{count:'exact',head:true}).eq('restaurant_id',rid).gte('created_at',today.toISOString()),
       supabase.from('orders').select('*',{count:'exact',head:true}).eq('restaurant_id',rid).gte('created_at',week.toISOString()),
       supabase.from('orders').select('*',{count:'exact',head:true}).eq('restaurant_id',rid),
       supabase.from('menu_items').select('*',{count:'exact',head:true}).eq('restaurant_id',rid),
+      supabase.from('orders').select('*',{count:'exact',head:true}).eq('restaurant_id',rid).gte('created_at',yesterday.toISOString()).lt('created_at',today.toISOString()),
+      supabase.from('orders').select('*',{count:'exact',head:true}).eq('restaurant_id',rid).gte('created_at',prevWeekStart.toISOString()).lt('created_at',prevWeekEnd.toISOString()),
     ])
-    setStats({ today:todayC||0, week:weekC||0, total:totalC||0, items:itemsC||0 })
+    setStats({ today:todayC||0, week:weekC||0, total:totalC||0, items:itemsC||0, yesterday:yesterdayC||0, prevWeek:prevWeekC||0 })
 
     // Chart
     const days = []
@@ -67,6 +72,14 @@ export default function AdminDashboard() {
   }
 
   const greet=()=>{const h=new Date().getHours();return h<12?'Günaydın':h<18?'İyi öğleden sonralar':'İyi akşamlar'}
+  // Trend: bugünkü değer önceki değere göre yüzde
+  const trend=(cur,prev)=>{
+    if(prev===0) return cur>0?{pct:100,up:true}:null
+    const pct=Math.round((cur-prev)/prev*100)
+    return {pct:Math.abs(pct),up:pct>=0}
+  }
+  const todayTrend=trend(stats.today,stats.yesterday)
+  const weekTrend=trend(stats.week,stats.prevWeek)
   const SC={pending:'#f59e0b',preparing:'#3b82f6',ready:'#1D9E75',served:'#6b7280',cancelled:'#ef4444'}
   const SL={pending:'Bekliyor',preparing:'Hazırlanıyor',ready:'Hazır',served:'Servis edildi',cancelled:'İptal'}
 
@@ -93,26 +106,51 @@ export default function AdminDashboard() {
       {/* ── Sol ── */}
       <div>
         {/* Welcome banner */}
-        <div style={{background:'linear-gradient(135deg,#0d5e48,#1D9E75,#2db88a)',borderRadius:16,padding:'24px 28px',marginBottom:20,position:'relative',overflow:'hidden'}}>
+        <div style={{background:'linear-gradient(135deg,#0d5e48,#1D9E75,#2db88a)',borderRadius:16,padding:'24px 28px',marginBottom:16,position:'relative',overflow:'hidden'}}>
           <div style={{position:'absolute',right:-30,top:-30,width:200,height:200,borderRadius:'50%',background:'rgba(255,255,255,.05)'}}/>
           <p style={{fontSize:11,color:'rgba(255,255,255,.65)',fontWeight:600,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:4}}>{greet()}</p>
           <h1 style={{fontSize:22,fontWeight:900,color:'#fff',marginBottom:6}}>{restName}</h1>
           <p style={{fontSize:13,color:'rgba(255,255,255,.8)'}}>
             Bugün <strong style={{color:'#fff'}}>{stats.today}</strong> sipariş
-            {stats.today>0 && <span style={{marginLeft:8,background:'rgba(255,255,255,.15)',padding:'2px 10px',borderRadius:20,fontSize:11}}>🎉 Harika!</span>}
+            {todayTrend && (
+              <span style={{marginLeft:8,background:'rgba(255,255,255,.15)',padding:'2px 10px',borderRadius:20,fontSize:11,fontWeight:600}}>
+                {todayTrend.up?'↗':'↘'} Dünden %{todayTrend.pct} {todayTrend.up?'daha iyi':'daha az'}
+              </span>
+            )}
           </p>
         </div>
+
+        {/* Komut / arama kutusu */}
+        <a href="/admin/menu" style={{display:'flex',alignItems:'center',gap:14,background:'#fff',border:'1px solid #e8e8e4',borderRadius:14,padding:'16px 18px',marginBottom:20,textDecoration:'none',transition:'border-color .15s,box-shadow .15s'}}
+          onMouseOver={e=>{e.currentTarget.style.borderColor='#1D9E75';e.currentTarget.style.boxShadow='0 4px 16px rgba(29,158,117,.1)'}}
+          onMouseOut={e=>{e.currentTarget.style.borderColor='#e8e8e4';e.currentTarget.style.boxShadow='none'}}>
+          <div style={{width:42,height:42,borderRadius:11,background:'#e8f5ee',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+            <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#1D9E75" strokeWidth="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </div>
+          <div style={{flex:1}}>
+            <p style={{fontSize:15,fontWeight:700,color:'#222'}}>Ne yapmak istiyorsun?</p>
+            <p style={{fontSize:12,color:'#aaa',marginTop:1}}>Ürün, kategori, ayar, sayfa… yönetmeye başla</p>
+          </div>
+          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
 
         {/* KPI cards */}
         <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:20}}>
           {[
-            {label:'BUGÜN',        val:stats.today, sub:'sipariş', color:'#1D9E75', bg:'#e8f5ee'},
-            {label:'SON 7 GÜN',    val:stats.week,  sub:'sipariş', color:'#3b82f6', bg:'#eff6ff'},
-            {label:'TÜM ZAMANLAR', val:stats.total, sub:'sipariş', color:'#8b5cf6', bg:'#f5f3ff'},
-            {label:'MENÜDE',       val:stats.items,  sub:'ürün',   color:'#f59e0b', bg:'#fffbeb'},
+            {label:'BUGÜN',        val:stats.today, sub:'sipariş', color:'#1D9E75', bg:'#e8f5ee', tr:todayTrend},
+            {label:'SON 7 GÜN',    val:stats.week,  sub:'sipariş', color:'#3b82f6', bg:'#eff6ff', tr:weekTrend},
+            {label:'TÜM ZAMANLAR', val:stats.total, sub:'sipariş', color:'#8b5cf6', bg:'#f5f3ff', tr:null},
+            {label:'MENÜDE',       val:stats.items,  sub:'ürün',   color:'#f59e0b', bg:'#fffbeb', tr:null},
           ].map((k,i)=>(
             <div key={i} style={{background:'#fff',border:'1px solid #e8e8e4',borderRadius:12,padding:'16px'}}>
-              <p style={{fontSize:10,fontWeight:700,color:'#aaa',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:8}}>{k.label}</p>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+                <p style={{fontSize:10,fontWeight:700,color:'#aaa',textTransform:'uppercase',letterSpacing:'.06em'}}>{k.label}</p>
+                {k.tr && (
+                  <span style={{fontSize:10,fontWeight:700,color:k.tr.up?'#1D9E75':'#ef4444',background:k.tr.up?'#e8f5ee':'#fef2f2',padding:'2px 7px',borderRadius:20,display:'flex',alignItems:'center',gap:2}}>
+                    {k.tr.up?'↗':'↘'} %{k.tr.pct}
+                  </span>
+                )}
+              </div>
               <p style={{fontSize:28,fontWeight:900,color:k.color,lineHeight:1}}>{k.val}</p>
               <p style={{fontSize:11,color:'#ccc',marginTop:3}}>{k.sub}</p>
             </div>
@@ -121,9 +159,15 @@ export default function AdminDashboard() {
 
         {/* Chart */}
         <div style={{background:'#fff',border:'1px solid #e8e8e4',borderRadius:12,padding:'20px',marginBottom:20}}>
-          <div style={{marginBottom:16}}>
-            <h3 style={{fontSize:14,fontWeight:700}}>Son 14 Gün</h3>
-            <p style={{fontSize:12,color:'#aaa'}}>Günlük sipariş trafiği</p>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:16}}>
+            <div>
+              <h3 style={{fontSize:14,fontWeight:700}}>Son 14 Gün</h3>
+              <p style={{fontSize:12,color:'#aaa'}}>Günlük sipariş trafiği</p>
+            </div>
+            <a href="/admin/analytics" style={{fontSize:12,color:'#1D9E75',fontWeight:600,textDecoration:'none',display:'flex',alignItems:'center',gap:4}}>
+              Detaylı analitik
+              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#1D9E75" strokeWidth="2.2"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
           </div>
           <ResponsiveContainer width="100%" height={160}>
             <AreaChart data={chartData} margin={{top:0,right:0,left:-20,bottom:0}}>
@@ -166,7 +210,10 @@ export default function AdminDashboard() {
                       <div style={{height:'100%',background:'#1D9E75',borderRadius:4,width:`${item.pct}%`}}/>
                     </div>
                   </div>
-                  <span style={{fontSize:11,fontWeight:700,color:'#1D9E75',flexShrink:0}}>{item.count}</span>
+                  <div style={{textAlign:'right',flexShrink:0}}>
+                    <span style={{fontSize:13,fontWeight:800,color:'#1D9E75'}}>{item.count}</span>
+                    <p style={{fontSize:8,color:'#bbb',marginTop:1}}>sipariş</p>
+                  </div>
                 </div>
               ))
             }
