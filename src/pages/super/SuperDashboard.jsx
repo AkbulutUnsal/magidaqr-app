@@ -168,6 +168,8 @@ export default function SuperDashboard() {
           </div>
         </div>
       )}
+
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:24}}>
         <div>
           <h1 style={{fontSize:22,fontWeight:800,marginBottom:4}}>Firma Yönetimi</h1>
           <p style={{fontSize:13,color:'#aaa'}}>{tenants.length} kayıtlı firma</p>
