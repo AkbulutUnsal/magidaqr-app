@@ -36,6 +36,7 @@ export default function SuperDashboard() {
   async function addTenant() {
     const slug = form.slug.trim()
     const name = form.name.trim()
+    const email = form.email.trim()
     if (!name) return setMsg('❌ Firma adı zorunlu')
     if (!slug) return setMsg('❌ Slug zorunlu')
 
@@ -48,12 +49,27 @@ export default function SuperDashboard() {
         .select().single()
       if (te) throw te
 
-      const { error: re } = await supabase
+      const { data: rest, error: re } = await supabase
         .from('restaurants')
         .insert({ tenant_id: tenant.id, name_en: name, name_ka: name, slug, is_active: true })
+        .select().single()
       if (re) throw re
 
-      setMsg('✅ Firma başarıyla eklendi!')
+      if (email) {
+        const defaultPassword = slug + '2024!'
+        const { data: { session } } = await supabase.auth.getSession()
+        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-user`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+          body: JSON.stringify({ email, password: defaultPassword, full_name: name + ' Admin', role: 'admin', tenant_id: tenant.id, restaurant_id: rest.id }),
+        })
+        const result = await res.json()
+        if (!res.ok) throw new Error('Kullanıcı oluşturulamadı: ' + result.error)
+        setMsg(`✅ Firma eklendi! Giriş: ${email} / ${defaultPassword}`)
+      } else {
+        setMsg('✅ Firma başarıyla eklendi!')
+      }
+
       setForm({ name:'', email:'', plan:'basic', slug:'', ai_addon:false })
       setShowAdd(false)
       loadTenants()
