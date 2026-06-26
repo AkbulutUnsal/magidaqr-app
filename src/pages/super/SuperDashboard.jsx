@@ -66,6 +66,26 @@ export default function SuperDashboard() {
         const result = await res.json()
         if (!res.ok) throw new Error('Kullanıcı oluşturulamadı: ' + result.error)
         setMsg(`✅ Firma eklendi! Giriş: ${email} / ${defaultPassword}`)
+
+        // Welcome email gönder
+        try {
+          await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-welcome`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session?.access_token}`,
+            },
+            body: JSON.stringify({
+              email,
+              password: defaultPassword,
+              firm_name: name,
+              slug,
+              plan: form.plan,
+            }),
+          })
+        } catch(emailErr) {
+          console.warn('Email gönderilemedi:', emailErr)
+        }
       } else {
         setMsg('✅ Firma başarıyla eklendi!')
       }
