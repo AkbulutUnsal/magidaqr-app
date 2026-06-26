@@ -92,8 +92,9 @@ export default function SuperDashboard() {
     }
     setDeletingId(null)
   }
-  const planBg    = { basic:'#e8f5ee', advanced:'#f5f3ff' }
-  const planName  = { basic:'Temel', advanced:'Gelişmiş' }
+  const planColor = { basic:'#1D9E75', advanced:'#8b5cf6', trial:'#f59e0b' }
+  const planBg    = { basic:'#e8f5ee', advanced:'#f5f3ff', trial:'#fff8e8' }
+  const planName  = { basic:'Temel', advanced:'Gelişmiş', trial:'Trial' }
 
   if (loading) return <div style={{textAlign:'center',padding:64,color:'#aaa'}}>Yükleniyor...</div>
 
