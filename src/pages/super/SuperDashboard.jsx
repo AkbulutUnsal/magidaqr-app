@@ -10,6 +10,8 @@ export default function SuperDashboard() {
   const [form, setForm] = useState({ name:'', email:'', plan:'basic', slug:'', ai_addon:false })
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
+  const [deletingId, setDeletingId] = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(null) // { id, name }
 
   useEffect(() => { loadTenants() }, [])
 
@@ -61,7 +63,35 @@ export default function SuperDashboard() {
     setSaving(false)
   }
 
-  const planColor = { basic:'#1D9E75', advanced:'#8b5cf6' }
+  async function deleteTenant(id) {
+    setDeletingId(id)
+    try {
+      // Sırayla sil (cascade yoksa)
+      const { data: rests } = await supabase.from('restaurants').select('id').eq('tenant_id', id)
+      const restIds = (rests || []).map(r => r.id)
+
+      if (restIds.length > 0) {
+        // order_items → orders → menu_items → menu_categories → tables → restaurants
+        const { data: orders } = await supabase.from('orders').select('id').in('restaurant_id', restIds)
+        const orderIds = (orders || []).map(o => o.id)
+        if (orderIds.length > 0) {
+          await supabase.from('order_items').delete().in('order_id', orderIds)
+          await supabase.from('orders').delete().in('id', orderIds)
+        }
+        await supabase.from('menu_items').delete().in('restaurant_id', restIds)
+        await supabase.from('menu_categories').delete().in('restaurant_id', restIds)
+        await supabase.from('tables').delete().in('restaurant_id', restIds)
+        await supabase.from('restaurants').delete().in('id', restIds)
+      }
+
+      await supabase.from('tenants').delete().eq('id', id)
+      setConfirmDelete(null)
+      loadTenants()
+    } catch(e) {
+      setMsg('❌ Silinemedi: ' + (e.message || JSON.stringify(e)))
+    }
+    setDeletingId(null)
+  }
   const planBg    = { basic:'#e8f5ee', advanced:'#f5f3ff' }
   const planName  = { basic:'Temel', advanced:'Gelişmiş' }
 
@@ -115,7 +145,29 @@ export default function SuperDashboard() {
 
   return (
     <div style={{maxWidth:1000,margin:'0 auto'}}>
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:24}}>
+
+      {/* ── Silme Onay Modal ── */}
+      {confirmDelete && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.45)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <div style={{background:'#fff',borderRadius:16,padding:32,maxWidth:400,width:'90%',boxShadow:'0 20px 60px rgba(0,0,0,0.2)'}}>
+            <div style={{fontSize:32,marginBottom:12}}>🗑️</div>
+            <h3 style={{fontSize:16,fontWeight:800,marginBottom:8}}>Firmayı Sil</h3>
+            <p style={{fontSize:13,color:'#666',marginBottom:20}}>
+              <strong>"{confirmDelete.name}"</strong> firması ve tüm verileri (menü, siparişler, masalar) <strong>kalıcı olarak silinecek.</strong> Bu işlem geri alınamaz.
+            </p>
+            <div style={{display:'flex',gap:10}}>
+              <button onClick={() => setConfirmDelete(null)}
+                style={{flex:1,padding:'10px',border:'1.5px solid #e8e8e4',background:'#fff',borderRadius:8,fontSize:13,fontWeight:600,cursor:'pointer'}}>
+                İptal
+              </button>
+              <button onClick={() => deleteTenant(confirmDelete.id)} disabled={!!deletingId}
+                style={{flex:1,padding:'10px',background:'#ef4444',color:'#fff',border:'none',borderRadius:8,fontSize:13,fontWeight:700,cursor:deletingId?'wait':'pointer',opacity:deletingId?0.7:1}}>
+                {deletingId ? 'Siliniyor...' : 'Evet, Sil'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
         <div>
           <h1 style={{fontSize:22,fontWeight:800,marginBottom:4}}>Firma Yönetimi</h1>
           <p style={{fontSize:13,color:'#aaa'}}>{tenants.length} kayıtlı firma</p>
@@ -352,6 +404,11 @@ export default function SuperDashboard() {
                         }}
                         style={{fontSize:11,fontWeight:600,color:t.is_active?'#ef4444':'#1D9E75',background:'transparent',border:`1px solid ${t.is_active?'#fecaca':'#bbf7d0'}`,padding:'5px 12px',borderRadius:8,cursor:'pointer'}}>
                         {t.is_active ? 'Durdur' : 'Aktifleştir'}
+                      </button>
+                      <button onClick={() => setConfirmDelete({ id: t.id, name: t.name })}
+                        style={{fontSize:11,fontWeight:600,color:'#ef4444',background:'transparent',border:'1px solid #fecaca',padding:'5px 10px',borderRadius:8,cursor:'pointer'}}
+                        title="Firmayı kalıcı sil">
+                        🗑
                       </button>
                     </div>
                   </td>
