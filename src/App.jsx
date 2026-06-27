@@ -9,6 +9,7 @@ import WaiterPanel    from './pages/waiter/WaiterPanel'
 import AdminLayout    from './pages/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminMenu      from './pages/admin/AdminMenu'
+import AdminCategories from './pages/admin/AdminCategories'
 import AdminTables    from './pages/admin/AdminTables'
 import AdminReports   from './pages/admin/AdminReports'
 import AdminAnalytics from './pages/admin/AdminAnalytics'
@@ -69,7 +70,7 @@ export default function App() {
         }>
           <Route index        element={<AdminDashboard />} />
           <Route path="menu"       element={<AdminMenu />} />
-          <Route path="categories" element={<AdminMenu />} />
+          <Route path="categories" element={<AdminCategories />} />
           <Route path="tables"     element={<AdminTables />} />
           <Route path="reports"    element={<AdminReports />} />
           <Route path="settings"   element={<AdminSettings />} />
