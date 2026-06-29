@@ -30,7 +30,7 @@ export default function LoginPage() {
     <div className="login-page">
       <div className="login-card">
         <div className="login-logo">
-          <span className="logo-qr"><span style={{color:'#1D9E75'}}>magida</span><span style={{color:'#E8192C'}}>QR</span></span>
+          <span className="logo-qr"><span style={{color:'#1D9E75',fontWeight:900}}>magida</span><span style={{color:'#E8192C',fontWeight:900}}>QR</span></span>
         </div>
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
