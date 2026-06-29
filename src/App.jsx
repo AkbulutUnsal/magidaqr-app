@@ -8,6 +8,7 @@ import KitchenPanel   from './pages/kitchen/KitchenPanel'
 import WaiterPanel    from './pages/waiter/WaiterPanel'
 import AdminLayout    from './pages/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminOrders    from './pages/admin/AdminOrders'
 import AdminMenu      from './pages/admin/AdminMenu'
 import AdminCategories from './pages/admin/AdminCategories'
 import AdminSections   from './pages/admin/AdminSections'
@@ -79,7 +80,7 @@ export default function App() {
           <Route path="staff"      element={<AdminStaff />} />
           <Route path="analytics"  element={<AdminAnalytics />} />
           <Route path="qr"         element={<AdminQR />} />
-          <Route path="orders"     element={<AdminDashboard />} />
+          <Route path="orders"     element={<AdminOrders />} />
           <Route path="allergens"  element={<AdminAllergens />} />
           <Route path="campaigns"  element={<AdminCampaigns />} />
           <Route path="info-pages" element={<AdminInfoPages />} />
