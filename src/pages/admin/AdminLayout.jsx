@@ -88,7 +88,7 @@ export default function AdminLayout() {
       <aside style={{width:mini?52:220,flexShrink:0,background:'#fff',borderRight:'1px solid #e8e8e4',display:'flex',flexDirection:'column',transition:'width .2s',overflow:'hidden'}}>
         {/* Logo */}
         <div style={{padding:'14px 12px',display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:'1px solid #f0f0ee',minHeight:52,flexShrink:0}}>
-          {!mini && <span style={{fontSize:16,fontWeight:900}}>magida<span style={{color:'#1D9E75'}}>QR</span></span>}
+          {!mini && <span style={{fontSize:16,fontWeight:900}}><span style={{color:'#1D9E75'}}>magida</span><span style={{color:'#E8192C'}}>QR</span></span>}
           <button onClick={()=>setMini(m=>!m)} style={{background:'none',border:'none',cursor:'pointer',color:'#bbb',padding:4,borderRadius:6,display:'flex',alignItems:'center',marginLeft:mini?'auto':0,flexShrink:0}}>
             <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
           </button>
