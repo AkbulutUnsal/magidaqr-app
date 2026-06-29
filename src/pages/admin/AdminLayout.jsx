@@ -38,7 +38,8 @@ const NAV = [
   ]},
   { section:'MENÜ İÇERİK', items: [
     { to:'/admin/hero-cards',  label:'Ana Sayfa Kartları', Icon:CardIcon },
-    { to:'/admin/categories',  label:'Kategoriler',      Icon:GridIcon },
+    { to:'/admin/sections',    label:'Bölümler',         Icon:GridIcon },
+    { to:'/admin/categories',  label:'Kategoriler',      Icon:FolderIcon },
     { to:'/admin/menu',        label:'Ürünler',          Icon:DishIcon },
     { to:'/admin/bulk-price',  label:'Toplu Fiyat',      Icon:TagIcon },
     { to:'/admin/import',      label:'Import / Export',  Icon:UploadIcon },
