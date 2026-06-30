@@ -89,9 +89,10 @@ export default function MenuPage() {
     return matchCat && item.is_available
   }), [items, activeCategory, lang])
 
-  const featuredItems = useMemo(() => items.filter(i => i.is_featured && i.is_available), [items])
+  const featuredItems = useMemo(() => items.filter(i => i.is_featured && i.is_available && !i.is_sold_out), [items])
 
   const addToCart = (item) => {
+    if (item.is_sold_out) return
     setCart(prev => {
       const ex = prev.find(c => c.id === item.id)
       if (ex) return prev.map(c => c.id === item.id ? {...c, qty: c.qty+1} : c)
@@ -403,13 +404,14 @@ export default function MenuPage() {
                       onClick={() => openDetail(item)}
                       style={{ background:'#fff', borderRadius:18, overflow:'hidden', cursor:'pointer',
                         boxShadow:'0 2px 12px rgba(0,0,0,0.06)',
-                        display:'flex', animation:`fadeUp 0.4s ease ${idx*0.05}s both` }}>
+                        display:'flex', opacity: item.is_sold_out?0.6:1, animation:`fadeUp 0.4s ease ${idx*0.05}s both` }}>
                       {/* Sol — görsel */}
-                      <div style={{ width:110, minHeight:110, background:'#f4f4f2', overflow:'hidden', flexShrink:0 }}>
+                      <div style={{ width:110, minHeight:110, background:'#f4f4f2', overflow:'hidden', flexShrink:0, position:'relative' }}>
                         {item.image_url
-                          ? <img src={item.image_url} alt={n(item)} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                          ? <img src={item.image_url} alt={n(item)} style={{ width:'100%', height:'100%', objectFit:'cover', filter:item.is_sold_out?'grayscale(1)':'none' }} />
                           : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:28 }}>🍽️</div>
                         }
+                        {item.is_sold_out && <span style={{ position:'absolute', top:6, left:6, background:'#E8192C', color:'#fff', fontSize:9, fontWeight:800, padding:'2px 7px', borderRadius:6, letterSpacing:.3 }}>TÜKENDİ</span>}
                       </div>
                       {/* Sağ — bilgi + ekle */}
                       <div style={{ flex:1, padding:'12px 12px 12px 14px', display:'flex', flexDirection:'column', justifyContent:'space-between', minWidth:0 }}>
@@ -432,6 +434,9 @@ export default function MenuPage() {
                               </span>
                             )}
                           </div>
+                          {item.is_sold_out ? (
+                            <span style={{ fontSize:11, fontWeight:800, color:'#E8192C', background:'#fee2e2', padding:'6px 12px', borderRadius:10, flexShrink:0 }}>Tükendi</span>
+                          ) : (
                           <button className="add-btn-anim"
                             onClick={e => { e.stopPropagation(); addToCart(item) }}
                             style={{ width:32, height:32, borderRadius:10, background:brand, color:'#fff',
@@ -440,6 +445,7 @@ export default function MenuPage() {
                               boxShadow:`0 3px 10px ${brand}60`, flexShrink:0 }}>
                             +
                           </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -586,12 +592,16 @@ export default function MenuPage() {
                   <p style={{ fontSize:11, color:'#aaa', margin:0 }}>Fiyat</p>
                   <span style={{ fontSize:28, fontWeight:900, color:brand }}>{detailItem.price} ₾</span>
                 </div>
+                {detailItem.is_sold_out ? (
+                  <span style={{ background:'#fee2e2', color:'#E8192C', padding:'14px 32px', borderRadius:16, fontSize:16, fontWeight:800, letterSpacing:.3 }}>Tükendi</span>
+                ) : (
                 <button onClick={() => addToCart(detailItem)}
                   style={{ background:brand, color:'#fff', border:'none', padding:'14px 32px',
                     borderRadius:16, fontSize:16, fontWeight:800, cursor:'pointer',
                     boxShadow:`0 6px 20px ${brand}55`, letterSpacing:.3 }}>
                   + {t('add_to_cart')}
                 </button>
+                )}
               </div>
             </div>
           </div>

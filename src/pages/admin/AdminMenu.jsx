@@ -135,6 +135,7 @@ export default function AdminMenu() {
 
   const allVisIds = visible.map(i => i.id)
   const allChecked = allVisIds.length > 0 && allVisIds.every(id => selected.includes(id))
+  const hasSoldOut = items.length > 0 && 'is_sold_out' in items[0]
   function toggleAll() { setSelected(allChecked ? [] : allVisIds) }
   function toggleOne(id) { setSelected(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]) }
 
@@ -229,6 +230,7 @@ export default function AdminMenu() {
                 <th style={{ ...th, textAlign: 'right' }}>Fiyat</th>
                 <th style={{ ...th, textAlign: 'center', width: 90 }}>Öne Çıkar</th>
                 <th style={{ ...th, textAlign: 'center', width: 80 }}>Durum</th>
+                {hasSoldOut && <th style={{ ...th, textAlign: 'center', width: 80 }}>Tükendi</th>}
                 <th style={{ ...th, textAlign: 'right', width: 90 }}>İşlem</th>
               </tr>
             </thead>
@@ -255,6 +257,7 @@ export default function AdminMenu() {
                     <td style={{ ...td, textAlign: 'right', fontWeight: 700, fontSize: 14 }}>{money(it.price)}</td>
                     <td style={{ ...td, textAlign: 'center' }}><Toggle on={!!it.is_featured} color={AMBER} onClick={() => toggleField(it, 'is_featured')} /></td>
                     <td style={{ ...td, textAlign: 'center' }}><Toggle on={!!it.is_available} color={GREEN} onClick={() => toggleField(it, 'is_available')} /></td>
+                    {hasSoldOut && <td style={{ ...td, textAlign: 'center' }}><Toggle on={!!it.is_sold_out} color={'#E8192C'} onClick={() => toggleField(it, 'is_sold_out')} /></td>}
                     <td style={{ ...td, textAlign: 'right' }}>
                       <button onClick={() => { setEditItem(it); setShowForm(true) }} style={iconBtn} title="Düzenle"><EditIcon /></button>
                       <button onClick={() => deleteItem(it.id)} style={{ ...iconBtn, color: RED }} title="Sil"><TrashIcon /></button>
