@@ -43,6 +43,7 @@ export default function AdminOrders() {
   const lang = (i18n.language || 'tr').slice(0, 2)
   const [orders, setOrders] = useState([])
   const [calls, setCalls] = useState([])
+  const [tables, setTables] = useState([])
   const [loading, setLoading] = useState(true)
   const [pulse, setPulse] = useState(false)
   const ridRef = useRef(profile?.restaurant_id)
@@ -51,15 +52,17 @@ export default function AdminOrders() {
   async function load() {
     const rid = ridRef.current
     if (!rid) return
-    const [{ data: active }, { data: servedToday }, { data: callData }] = await Promise.all([
+    const [{ data: active }, { data: servedToday }, { data: callData }, { data: tableData }] = await Promise.all([
       supabase.from('orders').select('*, tables(table_number,label), order_items(*, menu_item:menu_items(name_tr,name_en,name_ka,name_ru))')
         .eq('restaurant_id', rid).in('status', ['pending', 'confirmed', 'preparing', 'ready']).order('created_at', { ascending: true }),
       supabase.from('orders').select('*, tables(table_number,label), order_items(*, menu_item:menu_items(name_tr,name_en,name_ka,name_ru))')
         .eq('restaurant_id', rid).eq('status', 'served').gte('created_at', startOfToday()).order('created_at', { ascending: false }),
       supabase.from('table_calls').select('*, tables(table_number,label)').eq('restaurant_id', rid).eq('status', 'open').order('created_at', { ascending: false }),
+      supabase.from('tables').select('id,table_number,label,is_active').eq('restaurant_id', rid).order('table_number', { ascending: true }),
     ])
     setOrders([...(active || []), ...(servedToday || [])])
     setCalls(callData || [])
+    setTables((tableData || []).filter(t => t.is_active !== false))
     setLoading(false)
   }
 
@@ -69,6 +72,7 @@ export default function AdminOrders() {
     const ch = supabase.channel('admin-orders-' + profile.restaurant_id)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `restaurant_id=eq.${profile.restaurant_id}` }, () => { flash(); load() })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'table_calls', filter: `restaurant_id=eq.${profile.restaurant_id}` }, () => { flash(); load() })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, () => { load() })
       .subscribe()
     return () => supabase.removeChannel(ch)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -92,6 +96,18 @@ export default function AdminOrders() {
       todayRevenue: todays.reduce((s, o) => s + Number(o.total_price || 0), 0),
     }
   }, [orders, calls])
+
+  const floor = useMemo(() => {
+    const m = {}
+    tables.forEach(t => { m[t.id] = { ...t, call: null, ready: 0, active: 0 } })
+    calls.forEach(c => { if (m[c.table_id]) m[c.table_id].call = c.type === 'bill' ? 'bill' : 'waiter' })
+    orders.forEach(o => {
+      if (!o.table_id || !m[o.table_id]) return
+      if (o.status === 'ready') m[o.table_id].ready++
+      else if (['pending', 'confirmed', 'preparing'].includes(o.status)) m[o.table_id].active++
+    })
+    return Object.values(m)
+  }, [tables, orders, calls])
 
   const byCol = key => orders.filter(o => COLUMNS.find(c => c.key === key).statuses.includes(o.status))
 
@@ -133,6 +149,29 @@ export default function AdminOrders() {
         </div>
       )}
 
+      {/* masa durumu · salon planı */}
+      {tables.length > 0 && (
+        <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 14, padding: 16, marginBottom: 18 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>🪑 Masa Durumu <span style={{ fontSize: 11, color: MUTED, fontWeight: 500 }}>· canlı</span></p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(78px,1fr))', gap: 8 }}>
+            {floor.map(t => {
+              const s = t.call === 'bill' ? { c: AMBER, t: 'Hesap' }
+                : t.call === 'waiter' ? { c: RED, t: 'Çağrı' }
+                  : t.ready ? { c: GREEN, t: 'Hazır' }
+                    : t.active ? { c: VIOLET, t: 'Hazırlanıyor' }
+                      : { c: '#d1d5db', t: 'Boş' }
+              return (
+                <div key={t.id} style={{ border: `1.5px solid ${s.c}`, background: s.c + '10', borderRadius: 10, padding: '9px 6px', textAlign: 'center' }}>
+                  <p style={{ fontSize: 17, fontWeight: 900, color: '#111', lineHeight: 1 }}>{t.table_number}</p>
+                  {t.label && <p style={{ fontSize: 9, color: '#bbb', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.label}</p>}
+                  <p style={{ fontSize: 9.5, fontWeight: 700, color: s.c, marginTop: 4 }}>{s.t}</p>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* kanban */}
       {loading ? (
         <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 14, padding: 56, textAlign: 'center', color: '#bbb' }}>Yükleniyor...</div>
@@ -156,15 +195,15 @@ export default function AdminOrders() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                         <div>
                           <p style={{ fontSize: 15, fontWeight: 800, color: '#111' }}>Masa {o.tables?.table_number || '—'}</p>
-                          <p style={{ fontSize: 10.5, color: '#aaa' }}>{ago(o.created_at)} · {o.order_items?.length || 0} kalem</p>
+                          <p style={{ fontSize: 10.5, color: '#aaa' }}>{ago(o.created_at)} · {(() => { const t = o.order_items?.length || 0; const r = o.order_items?.filter(i => i.is_ready).length || 0; return r > 0 ? `${r}/${t} hazır` : `${t} kalem` })()}</p>
                         </div>
                         <span style={{ fontSize: 13, fontWeight: 800, color: GREEN }}>{money(o.total_price)}</span>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginBottom: o.note ? 8 : 10 }}>
                         {o.order_items?.slice(0, 6).map(oi => (
-                          <div key={oi.id} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#555' }}>
-                            <span style={{ minWidth: 20, height: 20, borderRadius: 5, background: col.color + '22', color: col.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800 }}>{oi.quantity}</span>
-                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{dispItem(oi.menu_item)}</span>
+                          <div key={oi.id} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: oi.is_ready ? '#9ca3af' : '#555' }}>
+                            <span style={{ minWidth: 20, height: 20, borderRadius: 5, background: oi.is_ready ? GREEN : col.color + '22', color: oi.is_ready ? '#fff' : col.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800 }}>{oi.is_ready ? '✓' : oi.quantity}</span>
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: oi.is_ready ? 'line-through' : 'none' }}>{dispItem(oi.menu_item)}</span>
                           </div>
                         ))}
                         {o.order_items?.length > 6 && <span style={{ fontSize: 11, color: '#bbb' }}>+{o.order_items.length - 6} kalem…</span>}
