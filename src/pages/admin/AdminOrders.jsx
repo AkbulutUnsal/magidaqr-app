@@ -52,6 +52,7 @@ export default function AdminOrders() {
   const [calls, setCalls] = useState([])
   const [tables, setTables] = useState([])
   const [selTableId, setSelTableId] = useState(null)
+  const [newOrderTable, setNewOrderTable] = useState(null)
   const [loading, setLoading] = useState(true)
   const [pulse, setPulse] = useState(false)
   const ridRef = useRef(profile?.restaurant_id)
@@ -253,7 +254,18 @@ export default function AdminOrders() {
           calls={calls.filter(c => c.table_id === selTableId)}
           dispItem={dispItem}
           onAdvance={advance} onCancel={cancel} onCloseCall={closeCall} onToggleItem={toggleItemReady}
+          onNewOrder={() => setNewOrderTable(tables.find(t => t.id === selTableId))}
           onClose={() => setSelTableId(null)}
+        />
+      )}
+
+      {newOrderTable && (
+        <NewOrderModal
+          table={newOrderTable}
+          restaurantId={profile?.restaurant_id}
+          lang={lang}
+          onClose={() => setNewOrderTable(null)}
+          onPlaced={() => { setNewOrderTable(null); load() }}
         />
       )}
     </div>
@@ -272,7 +284,7 @@ function Kpi({ big, label, color = '#111', small }) {
 /* ── Masa Detay Paneli (sağdan drawer) ──
    Seçili masanın tüm aktif siparişleri + açık çağrıları.
    Sahip buradan: kalem kalem hazır işaretler, durum ilerletir, çağrı kapatır, iptal eder. */
-function TableDrawer({ table, orders, calls, dispItem, onAdvance, onCancel, onCloseCall, onToggleItem, onClose }) {
+function TableDrawer({ table, orders, calls, dispItem, onAdvance, onCancel, onCloseCall, onToggleItem, onNewOrder, onClose }) {
   const total = orders.reduce((s, o) => s + Number(o.total_price || 0), 0)
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 1000, display: 'flex', justifyContent: 'flex-end' }}>
@@ -290,6 +302,9 @@ function TableDrawer({ table, orders, calls, dispItem, onAdvance, onCancel, onCl
         </div>
 
         <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {/* yeni sipariş */}
+          <button onClick={onNewOrder} style={{ width: '100%', background: GREEN, color: '#fff', border: 'none', borderRadius: 11, padding: '12px', fontSize: 14, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>➕ Bu masaya yeni sipariş</button>
+
           {/* çağrılar */}
           {calls.map(c => {
             const bill = c.type === 'bill'; const col = bill ? AMBER : GREEN
@@ -358,6 +373,176 @@ function TableDrawer({ table, orders, calls, dispItem, onAdvance, onCancel, onCl
           })}
         </div>
       </div>
+    </div>
+  )
+}
+
+/* ── Yeni Sipariş Modalı (kategorili + aramalı tam menü) ──
+   Sahip masaya elle sipariş girer. MenuPage ile birebir aynı insert:
+   orders({restaurant_id,table_id,note,total_price,lang}) + order_items({order_id,menu_item_id,quantity,unit_price}).
+   status/order_number DB default'undan gelir. Not (reis). */
+function NewOrderModal({ table, restaurantId, lang, onClose, onPlaced }) {
+  const [cats, setCats] = useState([])
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [activeCat, setActiveCat] = useState('all')
+  const [search, setSearch] = useState('')
+  const [cart, setCart] = useState([])
+  const [note, setNote] = useState('')
+  const [placing, setPlacing] = useState(false)
+
+  useEffect(() => {
+    let alive = true
+    ;(async () => {
+      const [{ data: c }, { data: it }] = await Promise.all([
+        supabase.from('menu_categories').select('id,name_tr,name_en,name_ka,name_ru,icon,sort_order,is_active').eq('restaurant_id', restaurantId).order('sort_order', { ascending: true }),
+        supabase.from('menu_items').select('id,name_tr,name_en,name_ka,name_ru,price,category_id,is_available,is_sold_out,sort_order').eq('restaurant_id', restaurantId).order('sort_order', { ascending: true }),
+      ])
+      if (!alive) return
+      setCats((c || []).filter(x => x.is_active !== false))
+      setItems(it || [])
+      setLoading(false)
+    })()
+    return () => { alive = false }
+  }, [restaurantId])
+
+  const dispItem = i => i?.[`name_${lang}`] || i?.name_tr || i?.name_en || i?.name_ka || 'Ürün'
+  const dispCat = c => c?.[`name_${lang}`] || c?.name_tr || c?.name_en || c?.name_ka || 'Kategori'
+
+  const catIdsWithItems = useMemo(() => new Set(items.map(i => i.category_id)), [items])
+  const catTabs = cats.filter(c => catIdsWithItems.has(c.id))
+
+  const visible = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return items.filter(i => {
+      if (activeCat !== 'all' && i.category_id !== activeCat) return false
+      if (q && !dispItem(i).toLowerCase().includes(q)) return false
+      return true
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, activeCat, search, lang])
+
+  const qtyOf = id => cart.find(c => c.id === id)?.qty || 0
+  const add = i => setCart(prev => {
+    const ex = prev.find(c => c.id === i.id)
+    if (ex) return prev.map(c => c.id === i.id ? { ...c, qty: c.qty + 1 } : c)
+    return [...prev, { id: i.id, name: dispItem(i), price: Number(i.price || 0), qty: 1 }]
+  })
+  const inc = id => setCart(prev => prev.map(c => c.id === id ? { ...c, qty: c.qty + 1 } : c))
+  const dec = id => setCart(prev => prev.flatMap(c => c.id === id ? (c.qty > 1 ? [{ ...c, qty: c.qty - 1 }] : []) : [c]))
+  const removeItem = id => setCart(prev => prev.filter(c => c.id !== id))
+
+  const count = cart.reduce((s, c) => s + c.qty, 0)
+  const total = cart.reduce((s, c) => s + c.price * c.qty, 0)
+
+  async function placeOrder() {
+    if (placing || cart.length === 0) return
+    setPlacing(true)
+    const { data: order, error } = await supabase.from('orders')
+      .insert({ restaurant_id: restaurantId, table_id: table.id, note: note.trim() || null, total_price: total, lang })
+      .select().single()
+    if (error || !order) { setPlacing(false); return alert('Sipariş oluşturulamadı' + (error ? ': ' + error.message : '')) }
+    const { error: e2 } = await supabase.from('order_items').insert(
+      cart.map(c => ({ order_id: order.id, menu_item_id: c.id, quantity: c.qty, unit_price: c.price }))
+    )
+    if (e2) { setPlacing(false); return alert('Kalemler eklenemedi: ' + e2.message) }
+    setPlacing(false)
+    onPlaced()
+  }
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 14 }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: 'min(620px,100%)', maxHeight: '90vh', background: '#fff', borderRadius: 16, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* başlık */}
+        <div style={{ padding: '15px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: 17, fontWeight: 900, color: '#111' }}>🍽️ Yeni Sipariş</p>
+            <p style={{ fontSize: 12, color: MUTED, marginTop: 1 }}>Masa {table?.table_number}{table?.label ? ` · ${table.label}` : ''}</p>
+          </div>
+          <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: 9, border: `1px solid ${BORDER}`, background: '#fff', fontSize: 17, color: '#666', cursor: 'pointer' }}>✕</button>
+        </div>
+
+        {/* arama + kategori */}
+        <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}` }}>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Ürün ara…"
+            style={{ width: '100%', boxSizing: 'border-box', border: `1px solid ${BORDER}`, borderRadius: 10, padding: '10px 12px', fontSize: 13.5, outline: 'none', marginBottom: 10 }} />
+          <div style={{ display: 'flex', gap: 7, overflowX: 'auto', paddingBottom: 2 }}>
+            <CatChip active={activeCat === 'all'} onClick={() => setActiveCat('all')}>Tümü</CatChip>
+            {catTabs.map(c => (
+              <CatChip key={c.id} active={activeCat === c.id} onClick={() => setActiveCat(c.id)}>{c.icon ? c.icon + ' ' : ''}{dispCat(c)}</CatChip>
+            ))}
+          </div>
+        </div>
+
+        {/* ürün listesi */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: 12, minHeight: 120 }}>
+          {loading ? (
+            <p style={{ textAlign: 'center', color: '#bbb', padding: '40px 0', fontSize: 13 }}>Menü yükleniyor…</p>
+          ) : visible.length === 0 ? (
+            <p style={{ textAlign: 'center', color: '#bbb', padding: '40px 0', fontSize: 13 }}>Ürün bulunamadı</p>
+          ) : visible.map(i => {
+            const disabled = i.is_sold_out || i.is_available === false
+            const q = qtyOf(i.id)
+            return (
+              <div key={i.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 8px', borderBottom: '1px solid #f2f2f0', opacity: disabled ? .5 : 1 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: '#222', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {dispItem(i)}{i.is_sold_out && <span style={{ fontSize: 10.5, color: RED, fontWeight: 700, marginLeft: 7 }}>TÜKENDİ</span>}
+                  </p>
+                  <p style={{ fontSize: 12.5, color: GREEN, fontWeight: 700, marginTop: 2 }}>{money(i.price)}</p>
+                </div>
+                {q > 0 ? (
+                  <Stepper q={q} onDec={() => dec(i.id)} onInc={() => inc(i.id)} />
+                ) : (
+                  <button disabled={disabled} onClick={() => add(i)}
+                    style={{ background: disabled ? '#eee' : GREEN, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: disabled ? 'not-allowed' : 'pointer', flexShrink: 0 }}>+ Ekle</button>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* sepet + oluştur */}
+        <div style={{ borderTop: `1px solid ${BORDER}`, padding: 14, background: '#fafafa' }}>
+          {cart.length === 0 ? (
+            <p style={{ fontSize: 12.5, color: MUTED, textAlign: 'center', padding: '6px 0' }}>Menüden ürün ekleyin</p>
+          ) : (
+            <>
+              <div style={{ maxHeight: 128, overflowY: 'auto', marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {cart.map(c => (
+                  <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: 13, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
+                    <Stepper q={c.qty} onDec={() => dec(c.id)} onInc={() => inc(c.id)} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#111', minWidth: 62, textAlign: 'right' }}>{money(c.price * c.qty)}</span>
+                    <button onClick={() => removeItem(c.id)} title="Kaldır" style={{ background: 'none', border: 'none', color: RED, fontSize: 15, cursor: 'pointer' }}>✕</button>
+                  </div>
+                ))}
+              </div>
+              <input value={note} onChange={e => setNote(e.target.value)} placeholder="Sipariş notu (opsiyonel)…"
+                style={{ width: '100%', boxSizing: 'border-box', border: `1px solid ${BORDER}`, borderRadius: 10, padding: '9px 12px', fontSize: 13, outline: 'none', marginBottom: 10 }} />
+            </>
+          )}
+          <button onClick={placeOrder} disabled={cart.length === 0 || placing}
+            style={{ width: '100%', background: (cart.length === 0 || placing) ? '#cbd5d0' : GREEN, color: '#fff', border: 'none', borderRadius: 11, padding: '13px', fontSize: 14.5, fontWeight: 800, cursor: (cart.length === 0 || placing) ? 'not-allowed' : 'pointer' }}>
+            {placing ? 'Oluşturuluyor…' : `Siparişi Oluştur${count > 0 ? ` · ${count} ürün · ${money(total)}` : ''}`}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CatChip({ children, active, onClick }) {
+  return (
+    <button onClick={onClick} style={{ padding: '7px 13px', borderRadius: 20, border: `1px solid ${active ? GREEN : BORDER}`, background: active ? GREEN : '#fff', color: active ? '#fff' : '#555', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>{children}</button>
+  )
+}
+function Stepper({ q, onDec, onInc }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 8, flexShrink: 0 }}>
+      <button onClick={onDec} style={{ width: 30, height: 30, border: 'none', background: 'none', fontSize: 17, color: GREEN, cursor: 'pointer' }}>−</button>
+      <span style={{ minWidth: 20, textAlign: 'center', fontSize: 13.5, fontWeight: 800 }}>{q}</span>
+      <button onClick={onInc} style={{ width: 30, height: 30, border: 'none', background: 'none', fontSize: 17, color: GREEN, cursor: 'pointer' }}>+</button>
     </div>
   )
 }
