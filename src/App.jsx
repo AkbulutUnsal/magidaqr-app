@@ -9,6 +9,8 @@ import WaiterPanel    from './pages/waiter/WaiterPanel'
 import AdminLayout    from './pages/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminOrders    from './pages/admin/AdminOrders'
+import AdminKitchen   from './pages/admin/AdminKitchen'
+import AdminWaiter    from './pages/admin/AdminWaiter'
 import AdminMenu      from './pages/admin/AdminMenu'
 import AdminCategories from './pages/admin/AdminCategories'
 import AdminSections   from './pages/admin/AdminSections'
@@ -50,14 +52,14 @@ export default function App() {
         {/* Auth */}
         <Route path="/login" element={<LoginPage />} />
 
-        {/* Mutfak */}
+        {/* Mutfak (personel cihazı - ayrı giriş) */}
         <Route path="/kitchen" element={
           <ProtectedRoute roles={['kitchen','admin','super_admin']}>
             <KitchenPanel />
           </ProtectedRoute>
         } />
 
-        {/* Garson */}
+        {/* Garson (personel cihazı - ayrı giriş) */}
         <Route path="/waiter" element={
           <ProtectedRoute roles={['waiter','admin','super_admin']}>
             <WaiterPanel />
@@ -81,6 +83,8 @@ export default function App() {
           <Route path="analytics"  element={<AdminAnalytics />} />
           <Route path="qr"         element={<AdminQR />} />
           <Route path="orders"     element={<AdminOrders />} />
+          <Route path="mutfak"     element={<AdminKitchen />} />
+          <Route path="garson"     element={<AdminWaiter />} />
           <Route path="allergens"  element={<AdminAllergens />} />
           <Route path="campaigns"  element={<AdminCampaigns />} />
           <Route path="info-pages" element={<AdminInfoPages />} />
