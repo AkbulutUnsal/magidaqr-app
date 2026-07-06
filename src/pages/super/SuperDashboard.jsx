@@ -128,6 +128,25 @@ export default function SuperDashboard() {
       if (rErr) throw rErr
       const restIds = (rests || []).map(r => r.id)
 
+      // Bu tenant'a bağlı personel hesaplarının auth.users kaydını da temizle —
+      // yoksa aynı e-posta bir daha yeni firma açmak için kullanılamaz
+      const { data: profiles, error: profErr } = await supabase.from('profiles').select('id').eq('tenant_id', id)
+      if (profErr) throw profErr
+      if (profiles?.length > 0) {
+        const { data: { session } } = await supabase.auth.getSession()
+        for (const p of profiles) {
+          const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+            body: JSON.stringify({ user_id: p.id }),
+          })
+          if (!res.ok) {
+            const result = await res.json().catch(() => ({}))
+            console.warn('Kullanıcı silinemedi:', p.id, result.error)
+          }
+        }
+      }
+
       if (restIds.length > 0) {
         const { data: orders, error: oErr } = await supabase.from('orders').select('id').in('restaurant_id', restIds)
         if (oErr) throw oErr
