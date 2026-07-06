@@ -41,11 +41,22 @@ export function AuthProvider({ children }) {
   }, [])
 
   async function fetchProfile(userId) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .single()
+
+    if (error || !data) {
+      // Profil bulunamadı — hesap silinmiş olabilir. Oturumu kapat, login'e dönsün.
+      // Aksi halde sayfa sonsuza kadar bomboş kalır.
+      await supabase.auth.signOut()
+      setUser(null)
+      setProfile(null)
+      setLoading(false)
+      return
+    }
+
     setProfile(data)
     setLoading(false)
 
