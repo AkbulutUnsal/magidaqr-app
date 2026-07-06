@@ -762,7 +762,7 @@ function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal
               <line x1="12" y1="3" x2="12" y2="1"/>
             </svg>
           </div>
-          <span style={{ fontSize:9, fontWeight:800, color:'#E8192C' }}>Menü</span>
+          <span style={{ fontSize:9, fontWeight:800, color:'#E8192C' }}>{t('menu')}</span>
         </button>
 
         {/* Hesap */}
@@ -803,7 +803,7 @@ function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal
             <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
           </svg>
           <span style={{ fontSize:9, fontWeight:700, color:cartCount>0?'#fff':'#999', whiteSpace:'nowrap' }}>
-            {cartCount>0?format(cartTotal):'Sepet'}
+            {cartCount>0?format(cartTotal):t('cart')}
           </span>
         </button>
         )}

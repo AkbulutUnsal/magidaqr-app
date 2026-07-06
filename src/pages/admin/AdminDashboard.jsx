@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
+import { useCurrency } from '../../hooks/useCurrency'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 
 export default function AdminDashboard() {
   const { profile } = useAuth()
+  const { format } = useCurrency()
   const [stats, setStats] = useState({ today:0, week:0, total:0, items:0, yesterday:0, prevWeek:0 })
   const [topItems, setTopItems] = useState([])
   const [recentOrders, setRecentOrders] = useState([])
@@ -295,7 +297,7 @@ export default function AdminDashboard() {
                 ) : previewItems.map((item,i)=>(
                   <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'4px 0',borderBottom:'1px solid #f4f4f2'}}>
                     <span style={{fontSize:9,fontWeight:600}}>{item.name_tr||item.name_en||item.name_ka||'—'}</span>
-                    <span style={{fontSize:9,fontWeight:800,color:'#1D9E75'}}>{item.price} ₾</span>
+                    <span style={{fontSize:9,fontWeight:800,color:'#1D9E75'}}>{format(item.price)}</span>
                   </div>
                 ))}
               </div>
@@ -334,7 +336,7 @@ export default function AdminDashboard() {
                   <p style={{fontSize:10,color:'#aaa'}}>{new Date(o.created_at).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}</p>
                 </div>
                 <div style={{textAlign:'right'}}>
-                  <p style={{fontSize:12,fontWeight:700,color:'#1D9E75'}}>{o.total_price} ₾</p>
+                  <p style={{fontSize:12,fontWeight:700,color:'#1D9E75'}}>{format(o.total_price)}</p>
                   <span style={{fontSize:9,fontWeight:700,color:SC[o.status]||'#aaa',background:(SC[o.status]||'#aaa')+'18',padding:'1px 7px',borderRadius:20}}>
                     {SL[o.status]||o.status}
                   </span>
