@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import i18n from '../i18n'
+import { hasManualLanguage } from '../i18n/langPreference'
 
 const AuthContext = createContext(null)
 
@@ -48,8 +49,9 @@ export function AuthProvider({ children }) {
     setProfile(data)
     setLoading(false)
 
-    // Personel restoranın diline otomatik geçsin (super_admin'in restaurant_id'si yok, etkilenmez)
-    if (data?.restaurant_id) {
+    // Personel restoranın diline otomatik geçsin — AMA sadece kullanıcı daha önce
+    // elle bir dil seçmediyse (manuel seçim her zaman öncelikli ve kalıcı)
+    if (data?.restaurant_id && !hasManualLanguage()) {
       const { data: rest } = await supabase
         .from('restaurants')
         .select('default_language, default_lang')

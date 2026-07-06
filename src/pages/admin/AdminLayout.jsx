@@ -3,6 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../hooks/useAuth'
 import { supabase } from '../../lib/supabase'
+import { setManualLanguage } from '../../i18n/langPreference'
 import AdminFooter from '../../components/AdminFooter'
 
 // ── Icons ──
@@ -237,7 +238,7 @@ function AdminLangSwitcher({ i18n }) {
           <div style={{ position:'absolute', right:0, top:36, background:'#fff', border:'1px solid #e8e8e4',
             borderRadius:10, boxShadow:'0 8px 28px rgba(0,0,0,.12)', overflow:'hidden', zIndex:91, minWidth:145 }}>
             {LANGS.map(({ code, img, label }) => (
-              <button key={code} onClick={() => { i18n.changeLanguage(code); setOpen(false) }}
+              <button key={code} onClick={() => { setManualLanguage(i18n, code); setOpen(false) }}
                 style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'9px 12px',
                   border:'none', cursor:'pointer', background: i18n.language===code ? '#e8f5ee' : '#fff' }}>
                 <img src={img} alt={code} style={{ width:18, height:13, objectFit:'cover', borderRadius:2 }} />

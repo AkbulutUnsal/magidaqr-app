@@ -136,5 +136,24 @@
   "available_checkbox": "Доступно (показывать в меню)",
   "featured_checkbox": "Рекомендуемое блюдо",
   "goes_to_kitchen_checkbox": "🍳 Отправляется на кухню (отключите для напитков)",
-  "menu_item_count": "{{count}} блюд"
+  "menu_item_count": "{{count}} блюд",
+
+  "login_subtitle": "Войдите в панель управления",
+  "email_label": "Эл. почта",
+  "password_label": "Пароль",
+  "login_button": "Войти",
+  "logging_in": "Выполняется вход...",
+  "show_password": "Показать пароль",
+  "hide_password": "Скрыть пароль",
+  "forgot_password": "Забыли пароль?",
+  "reset_password_subtitle": "Введите email для сброса пароля",
+  "send_reset_link": "Отправить ссылку для сброса",
+  "reset_link_sent": "Мы отправили ссылку для сброса на вашу почту. Проверьте входящие (и спам).",
+  "back_to_login": "Назад ко входу",
+  "new_password_label": "Новый пароль",
+  "confirm_password_label": "Повторите новый пароль",
+  "reset_password_title": "Установите новый пароль",
+  "update_password_button": "Обновить пароль",
+  "password_mismatch": "Пароли не совпадают",
+  "password_updated_success": "Пароль обновлён! Перенаправление на страницу входа..."
 }

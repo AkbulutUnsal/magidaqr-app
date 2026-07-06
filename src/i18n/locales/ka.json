@@ -136,5 +136,24 @@
   "available_checkbox": "ხელმისაწვდომია (გამოჩნდეს მენიუში)",
   "featured_checkbox": "გამორჩეული პროდუქტი",
   "goes_to_kitchen_checkbox": "🍳 იგზავნება სამზარეულოში (გამორთეთ სასმელებისთვის)",
-  "menu_item_count": "{{count}} პროდუქტი"
+  "menu_item_count": "{{count}} პროდუქტი",
+
+  "login_subtitle": "შედით მართვის პანელში",
+  "email_label": "ელ. ფოსტა",
+  "password_label": "პაროლი",
+  "login_button": "შესვლა",
+  "logging_in": "შესვლა მიმდინარეობს...",
+  "show_password": "პაროლის ჩვენება",
+  "hide_password": "პაროლის დამალვა",
+  "forgot_password": "დაგავიწყდათ პაროლი?",
+  "reset_password_subtitle": "პაროლის აღსადგენად შეიყვანეთ ელ. ფოსტა",
+  "send_reset_link": "აღდგენის ბმულის გაგზავნა",
+  "reset_link_sent": "აღდგენის ბმული გამოგზავნილია თქვენს ელ. ფოსტაზე. შეამოწმეთ შემოსული ფოსტა (და სპამი).",
+  "back_to_login": "შესვლაზე დაბრუნება",
+  "new_password_label": "ახალი პაროლი",
+  "confirm_password_label": "გაიმეორეთ ახალი პაროლი",
+  "reset_password_title": "დააყენეთ ახალი პაროლი",
+  "update_password_button": "პაროლის განახლება",
+  "password_mismatch": "პაროლები არ ემთხვევა",
+  "password_updated_success": "თქვენი პაროლი განახლდა! გადამისამართება შესვლის გვერდზე..."
 }

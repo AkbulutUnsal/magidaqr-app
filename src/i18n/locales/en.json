@@ -136,5 +136,24 @@
   "available_checkbox": "Available (show in menu)",
   "featured_checkbox": "Featured item",
   "goes_to_kitchen_checkbox": "🍳 Sent to kitchen (turn off for drinks)",
-  "menu_item_count": "{{count}} items"
+  "menu_item_count": "{{count}} items",
+
+  "login_subtitle": "Sign in to your admin panel",
+  "email_label": "Email",
+  "password_label": "Password",
+  "login_button": "Sign in",
+  "logging_in": "Signing in...",
+  "show_password": "Show password",
+  "hide_password": "Hide password",
+  "forgot_password": "Forgot password",
+  "reset_password_subtitle": "Enter your email to reset your password",
+  "send_reset_link": "Send reset link",
+  "reset_link_sent": "We've sent a reset link to your email. Check your inbox (and spam folder).",
+  "back_to_login": "Back to login",
+  "new_password_label": "New Password",
+  "confirm_password_label": "Confirm New Password",
+  "reset_password_title": "Set New Password",
+  "update_password_button": "Update Password",
+  "password_mismatch": "Passwords don't match",
+  "password_updated_success": "Your password has been updated! Redirecting to login..."
 }

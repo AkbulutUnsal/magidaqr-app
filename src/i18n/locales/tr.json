@@ -136,5 +136,24 @@
   "available_checkbox": "Mevcut (menüde göster)",
   "featured_checkbox": "Öne çıkan ürün",
   "goes_to_kitchen_checkbox": "🍳 Mutfağa gider (içecekler için kapat)",
-  "menu_item_count": "{{count}} ürün"
+  "menu_item_count": "{{count}} ürün",
+
+  "login_subtitle": "Yönetim paneline giriş yap",
+  "email_label": "E-posta",
+  "password_label": "Şifre",
+  "login_button": "Giriş yap",
+  "logging_in": "Giriş yapılıyor...",
+  "show_password": "Şifreyi göster",
+  "hide_password": "Şifreyi gizle",
+  "forgot_password": "Şifremi unuttum",
+  "reset_password_subtitle": "Şifreni sıfırlamak için e-posta adresini gir",
+  "send_reset_link": "Sıfırlama bağlantısı gönder",
+  "reset_link_sent": "E-postana bir sıfırlama bağlantısı gönderdik. Gelen kutunu (ve spam klasörünü) kontrol et.",
+  "back_to_login": "Girişe dön",
+  "new_password_label": "Yeni Şifre",
+  "confirm_password_label": "Yeni Şifre (Tekrar)",
+  "reset_password_title": "Yeni Şifre Belirle",
+  "update_password_button": "Şifreyi Güncelle",
+  "password_mismatch": "Şifreler eşleşmiyor",
+  "password_updated_success": "Şifren güncellendi! Giriş sayfasına yönlendiriliyorsun..."
 }
