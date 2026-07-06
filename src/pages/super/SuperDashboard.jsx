@@ -310,77 +310,79 @@ export default function SuperDashboard() {
 
       {/* Modal */}
       {showAdd && (
-        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',zIndex:50,display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(4px)'}}>
-          <div style={{background:'#fff',borderRadius:16,padding:32,width:440,boxShadow:'0 24px 64px rgba(0,0,0,.18)'}}>
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',zIndex:50,display:'flex',alignItems:'flex-start',justifyContent:'center',backdropFilter:'blur(4px)',padding:'40px 16px',overflowY:'auto'}}>
+          <div style={{background:'#fff',borderRadius:16,padding:28,width:'100%',maxWidth:480,boxShadow:'0 24px 64px rgba(0,0,0,.18)'}}>
             <h2 style={{fontSize:18,fontWeight:800,marginBottom:20}}>Yeni Firma Ekle</h2>
 
             <div style={{marginBottom:14}}>
               <label style={{fontSize:12,fontWeight:600,color:'#666',display:'block',marginBottom:4}}>Firma Adı *</label>
               <input type="text" value={form.name} onChange={handleNameChange}
                 placeholder="Örn: Aurora Restaurant"
-                style={{width:'100%',padding:'9px 12px',border:'1.5px solid #e8e8e4',borderRadius:8,fontSize:13,outline:'none',fontFamily:'inherit'}}
+                style={{width:'100%',padding:'9px 12px',border:'1.5px solid #e8e8e4',borderRadius:8,fontSize:13,outline:'none',fontFamily:'inherit',boxSizing:'border-box'}}
                 onFocus={e=>e.target.style.borderColor='#1D9E75'} onBlur={e=>e.target.style.borderColor='#e8e8e4'}/>
             </div>
 
-            <div style={{marginBottom:14}}>
-              <label style={{fontSize:12,fontWeight:600,color:'#666',display:'block',marginBottom:4}}>Slug (URL) *</label>
-              <input type="text" value={form.slug} onChange={e=>setForm(p=>({...p,slug:e.target.value}))}
-                placeholder="aurora-restaurant"
-                style={{width:'100%',padding:'9px 12px',border:'1.5px solid #e8e8e4',borderRadius:8,fontSize:13,outline:'none',fontFamily:'monospace'}}
-                onFocus={e=>e.target.style.borderColor='#1D9E75'} onBlur={e=>e.target.style.borderColor='#e8e8e4'}/>
-              <p style={{fontSize:10,color:'#aaa',marginTop:4}}>menü URL: /menu/{form.slug || '...'}</p>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:14}}>
+              <div>
+                <label style={{fontSize:12,fontWeight:600,color:'#666',display:'block',marginBottom:4}}>Slug (URL) *</label>
+                <input type="text" value={form.slug} onChange={e=>setForm(p=>({...p,slug:e.target.value}))}
+                  placeholder="aurora-restaurant"
+                  style={{width:'100%',padding:'9px 12px',border:'1.5px solid #e8e8e4',borderRadius:8,fontSize:13,outline:'none',fontFamily:'monospace',boxSizing:'border-box'}}
+                  onFocus={e=>e.target.style.borderColor='#1D9E75'} onBlur={e=>e.target.style.borderColor='#e8e8e4'}/>
+                <p style={{fontSize:10,color:'#aaa',marginTop:4}}>/menu/{form.slug || '...'}</p>
+              </div>
+              <div>
+                <label style={{fontSize:12,fontWeight:600,color:'#666',display:'block',marginBottom:4}}>E-posta</label>
+                <input type="email" value={form.email} onChange={e=>setForm(p=>({...p,email:e.target.value}))}
+                  placeholder="admin@firma.com"
+                  style={{width:'100%',padding:'9px 12px',border:'1.5px solid #e8e8e4',borderRadius:8,fontSize:13,outline:'none',fontFamily:'inherit',boxSizing:'border-box'}}
+                  onFocus={e=>e.target.style.borderColor='#1D9E75'} onBlur={e=>e.target.style.borderColor='#e8e8e4'}/>
+              </div>
             </div>
 
-            <div style={{marginBottom:14}}>
-              <label style={{fontSize:12,fontWeight:600,color:'#666',display:'block',marginBottom:4}}>E-posta</label>
-              <input type="email" value={form.email} onChange={e=>setForm(p=>({...p,email:e.target.value}))}
-                placeholder="admin@firma.com"
-                style={{width:'100%',padding:'9px 12px',border:'1.5px solid #e8e8e4',borderRadius:8,fontSize:13,outline:'none',fontFamily:'inherit'}}
-                onFocus={e=>e.target.style.borderColor='#1D9E75'} onBlur={e=>e.target.style.borderColor='#e8e8e4'}/>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:14}}>
+              <div>
+                <label style={{fontSize:12,fontWeight:600,color:'#666',display:'block',marginBottom:4}}>Telefon (WhatsApp) *</label>
+                <input type="tel" value={form.phone} onChange={e=>setForm(p=>({...p,phone:e.target.value}))}
+                  placeholder="+995 5XX XX XX XX"
+                  style={{width:'100%',padding:'9px 12px',border:'1.5px solid #e8e8e4',borderRadius:8,fontSize:13,outline:'none',fontFamily:'inherit',boxSizing:'border-box'}}
+                  onFocus={e=>e.target.style.borderColor='#1D9E75'} onBlur={e=>e.target.style.borderColor='#e8e8e4'}/>
+                <p style={{fontSize:10,color:'#aaa',marginTop:4}}>WhatsApp'a da gönderilecek</p>
+              </div>
+              <div>
+                <label style={{fontSize:12,fontWeight:600,color:'#666',display:'block',marginBottom:4}}>Paket</label>
+                <select value={form.plan} onChange={e=>setForm(p=>({...p,plan:e.target.value}))}
+                  style={{width:'100%',padding:'9px 12px',border:'1.5px solid #e8e8e4',borderRadius:8,fontSize:13,outline:'none',fontFamily:'inherit',background:'#fff',boxSizing:'border-box'}}>
+                  <option value="basic">{PLANS.basic.name} — {PLANS.basic.price}{PLANS.basic.currency}</option>
+                  <option value="advanced">{PLANS.advanced.name} — {PLANS.advanced.price}{PLANS.advanced.currency}</option>
+                </select>
+                <p style={{fontSize:10,color:'#aaa',marginTop:4}}>
+                  {form.plan==='basic' ? PLANS.basic.tagline : PLANS.advanced.tagline}
+                </p>
+              </div>
             </div>
 
-            <div style={{marginBottom:14}}>
-              <label style={{fontSize:12,fontWeight:600,color:'#666',display:'block',marginBottom:4}}>Telefon (WhatsApp) *</label>
-              <input type="tel" value={form.phone} onChange={e=>setForm(p=>({...p,phone:e.target.value}))}
-                placeholder="+995 5XX XX XX XX"
-                style={{width:'100%',padding:'9px 12px',border:'1.5px solid #e8e8e4',borderRadius:8,fontSize:13,outline:'none',fontFamily:'inherit'}}
-                onFocus={e=>e.target.style.borderColor='#1D9E75'} onBlur={e=>e.target.style.borderColor='#e8e8e4'}/>
-              <p style={{fontSize:10,color:'#aaa',marginTop:4}}>Giriş bilgileri WhatsApp'tan da bu numaraya gönderilecek</p>
-            </div>
-
-            <div style={{marginBottom:14}}>
-              <label style={{fontSize:12,fontWeight:600,color:'#666',display:'block',marginBottom:4}}>Paket</label>
-              <select value={form.plan} onChange={e=>setForm(p=>({...p,plan:e.target.value}))}
-                style={{width:'100%',padding:'9px 12px',border:'1.5px solid #e8e8e4',borderRadius:8,fontSize:13,outline:'none',fontFamily:'inherit',background:'#fff'}}>
-                <option value="basic">{PLANS.basic.name} — {PLANS.basic.price} {PLANS.basic.currency}/{PLANS.basic.period}</option>
-                <option value="advanced">{PLANS.advanced.name} — {PLANS.advanced.price} {PLANS.advanced.currency}/{PLANS.advanced.period}</option>
-              </select>
-              <p style={{fontSize:10,color:'#aaa',marginTop:4}}>
-                {form.plan==='basic' ? PLANS.basic.tagline : PLANS.advanced.tagline}
-              </p>
-            </div>
-
-            <div style={{marginBottom:20,padding:'12px 14px',background:form.ai_addon?'#f5f3ff':'#f9f9f7',borderRadius:10,border:`1px solid ${form.ai_addon?'#ddd6fe':'#eee'}`}}>
+            <div style={{marginBottom:16,padding:'12px 14px',background:form.ai_addon?'#f5f3ff':'#f9f9f7',borderRadius:10,border:`1px solid ${form.ai_addon?'#ddd6fe':'#eee'}`}}>
               <label style={{display:'flex',alignItems:'center',gap:10,cursor:'pointer'}}>
                 <input type="checkbox" checked={form.ai_addon} onChange={e=>setForm(p=>({...p,ai_addon:e.target.checked}))}
-                  style={{width:18,height:18,accentColor:'#8b5cf6',cursor:'pointer'}} />
+                  style={{width:18,height:18,accentColor:'#8b5cf6',cursor:'pointer',flexShrink:0}} />
                 <span style={{flex:1}}>
                   <span style={{fontSize:13,fontWeight:700,color:'#222'}}>✨ {AI_ADDON.name} eklentisi</span>
                   <span style={{fontSize:11,color:'#888',display:'block',marginTop:1}}>Satış analizi & akıllı öneriler</span>
                 </span>
-                <span style={{fontSize:13,fontWeight:700,color:'#8b5cf6'}}>+{AI_ADDON.price} {AI_ADDON.currency}/{AI_ADDON.period}</span>
+                <span style={{fontSize:13,fontWeight:700,color:'#8b5cf6',flexShrink:0}}>+{AI_ADDON.price} {AI_ADDON.currency}/{AI_ADDON.period}</span>
               </label>
             </div>
 
             {/* Toplam */}
-            <div style={{marginBottom:20,padding:'10px 14px',background:'#1D9E7510',borderRadius:10,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <div style={{marginBottom:16,padding:'10px 14px',background:'#1D9E7510',borderRadius:10,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
               <span style={{fontSize:13,fontWeight:600,color:'#0F6E56'}}>Yıllık Toplam</span>
               <span style={{fontSize:18,fontWeight:900,color:'#1D9E75'}}>
                 {(form.plan==='basic'?PLANS.basic.price:PLANS.advanced.price) + (form.ai_addon?AI_ADDON.price:0)} ₾
               </span>
             </div>
 
-            {msg && <p style={{fontSize:12,color:'#ef4444',marginBottom:12}}>{msg}</p>}
+            {msg && <p style={{fontSize:12,color:'#ef4444',marginBottom:12,lineHeight:1.5}}>{msg}</p>}
 
             <div style={{display:'flex',gap:10}}>
               <button onClick={()=>{setShowAdd(false);setMsg('')}}
