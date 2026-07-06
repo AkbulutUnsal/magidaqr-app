@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { PLANS, AI_ADDON } from '../../lib/plans'
+import { useCurrency } from '../../hooks/useCurrency'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 
 export default function SuperDashboard() {
+  const { format } = useCurrency()
   const [tenants, setTenants] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
@@ -378,8 +380,8 @@ export default function SuperDashboard() {
               <label style={{fontSize:12,fontWeight:600,color:'#666',display:'block',marginBottom:4}}>Paket</label>
               <select value={form.plan} onChange={e=>setForm(p=>({...p,plan:e.target.value}))}
                 style={{width:'100%',padding:'9px 12px',border:'1.5px solid #e8e8e4',borderRadius:8,fontSize:13,outline:'none',fontFamily:'inherit',background:'#fff',boxSizing:'border-box'}}>
-                <option value="basic">{PLANS.basic.name} — {PLANS.basic.price}{PLANS.basic.currency}</option>
-                <option value="advanced">{PLANS.advanced.name} — {PLANS.advanced.price}{PLANS.advanced.currency}</option>
+                <option value="basic">{PLANS.basic.name} — {format(PLANS.basic.price)}</option>
+                <option value="advanced">{PLANS.advanced.name} — {format(PLANS.advanced.price)}</option>
               </select>
               <p style={{fontSize:10,color:'#aaa',marginTop:4}}>
                 {form.plan==='basic' ? PLANS.basic.tagline : PLANS.advanced.tagline}
@@ -394,7 +396,7 @@ export default function SuperDashboard() {
                   <span style={{fontSize:13,fontWeight:700,color:'#222'}}>✨ {AI_ADDON.name} eklentisi</span>
                   <span style={{fontSize:11,color:'#888',display:'block',marginTop:1}}>Satış analizi & akıllı öneriler</span>
                 </span>
-                <span style={{fontSize:13,fontWeight:700,color:'#8b5cf6',flexShrink:0}}>+{AI_ADDON.price} {AI_ADDON.currency}/{AI_ADDON.period}</span>
+                <span style={{fontSize:13,fontWeight:700,color:'#8b5cf6',flexShrink:0}}>+{format(AI_ADDON.price)}/{AI_ADDON.period}</span>
               </label>
             </div>
 
@@ -402,7 +404,7 @@ export default function SuperDashboard() {
             <div style={{marginBottom:16,padding:'10px 14px',background:'#1D9E7510',borderRadius:10,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
               <span style={{fontSize:13,fontWeight:600,color:'#0F6E56'}}>Yıllık Toplam</span>
               <span style={{fontSize:18,fontWeight:900,color:'#1D9E75'}}>
-                {(form.plan==='basic'?PLANS.basic.price:PLANS.advanced.price) + (form.ai_addon?AI_ADDON.price:0)} ₾
+                {format((form.plan==='basic'?PLANS.basic.price:PLANS.advanced.price) + (form.ai_addon?AI_ADDON.price:0))}
               </span>
             </div>
 
