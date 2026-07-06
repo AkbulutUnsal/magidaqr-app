@@ -525,6 +525,18 @@ export default function SuperDashboard() {
                         )
                       })()}
                       <button onClick={async()=>{
+                          const newPlan = t.plan === 'advanced' ? 'basic' : 'advanced'
+                          await supabase.from('tenants').update({ plan: newPlan }).eq('id', t.id)
+                          loadTenants()
+                        }}
+                        style={{fontSize:11,fontWeight:600,color:t.plan==='advanced'?'#8b5cf6':'#1D9E75',
+                          background:t.plan==='advanced'?'#f5f3ff':'#e8f5ee',
+                          border:`1px solid ${t.plan==='advanced'?'#ddd6fe':'#bbf7d0'}`,
+                          padding:'5px 10px',borderRadius:8,cursor:'pointer',whiteSpace:'nowrap'}}
+                        title={t.plan==='advanced'?'Gelişmiş\'ten Temel\'e düşür':'Temel\'den Gelişmiş\'e yükselt'}>
+                        {t.plan==='advanced' ? '↓ Temel\'e düşür' : '↑ Gelişmiş\'e yükselt'}
+                      </button>
+                      <button onClick={async()=>{
                           const base = t.plan_expires_at && new Date(t.plan_expires_at) > new Date()
                             ? new Date(t.plan_expires_at) : new Date()
                           base.setFullYear(base.getFullYear() + 1)

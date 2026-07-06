@@ -155,5 +155,6 @@
   "reset_password_title": "Set New Password",
   "update_password_button": "Update Password",
   "password_mismatch": "Passwords don't match",
-  "password_updated_success": "Your password has been updated! Redirecting to login..."
+  "password_updated_success": "Your password has been updated! Redirecting to login...",
+  "feature_locked_msg": "This feature is on the Advanced plan. Contact us to upgrade."
 }

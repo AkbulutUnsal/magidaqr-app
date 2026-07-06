@@ -34,43 +34,44 @@ const CogIcon     = ()=><svg width={16} height={16} viewBox="0 0 24 24" fill="no
 const ShieldIcon  = ()=><svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
 const ChefIcon    = ()=><svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6z"/><line x1="6" y1="17" x2="18" y2="17"/></svg>
 const BellIcon    = ()=><svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+const LockIcon    = ()=><svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
 
 // ── Nav structure ──
 const NAV = [
   { sectionKey: null, items: [
     { to:'/admin',             labelKey:'dashboard',         Icon:HomeIcon,     end:true },
-    { to:'/admin/analytics',   labelKey:'nav_analytics',     Icon:ChartIcon },
-    { to:'/admin/orders',      labelKey:'orders',            Icon:ReceiptIcon, dot:true },
-    { to:'/admin/mutfak',      labelKey:'nav_kitchen',       Icon:ChefIcon, dot:true },
-    { to:'/admin/garson',      labelKey:'nav_waiter',        Icon:BellIcon, dot:true },
+    { to:'/admin/analytics',   labelKey:'nav_analytics',     Icon:ChartIcon, restricted:true },
+    { to:'/admin/orders',      labelKey:'orders',            Icon:ReceiptIcon, dot:true, restricted:true },
+    { to:'/admin/mutfak',      labelKey:'nav_kitchen',       Icon:ChefIcon, dot:true, restricted:true },
+    { to:'/admin/garson',      labelKey:'nav_waiter',        Icon:BellIcon, dot:true, restricted:true },
     { to:'/admin/qr',          labelKey:'nav_qr_studio',     Icon:QrIcon },
-    { to:'/admin/ai',          labelKey:'nav_ai_assistant',  Icon:AIIcon, dot:true },
+    { to:'/admin/ai',          labelKey:'nav_ai_assistant',  Icon:AIIcon, dot:true, restricted:true },
   ]},
   { sectionKey:'section_menu_content', items: [
-    { to:'/admin/hero-cards',  labelKey:'nav_hero_cards',    Icon:CardIcon },
-    { to:'/admin/sections',    labelKey:'nav_sections',      Icon:GridIcon },
+    { to:'/admin/hero-cards',  labelKey:'nav_hero_cards',    Icon:CardIcon, restricted:true },
+    { to:'/admin/sections',    labelKey:'nav_sections',      Icon:GridIcon, restricted:true },
     { to:'/admin/categories',  labelKey:'categories',        Icon:FolderIcon },
     { to:'/admin/menu',        labelKey:'items',             Icon:DishIcon },
-    { to:'/admin/bulk-price',  labelKey:'nav_bulk_price',    Icon:TagIcon },
-    { to:'/admin/import',      labelKey:'nav_import_export', Icon:UploadIcon },
+    { to:'/admin/bulk-price',  labelKey:'nav_bulk_price',    Icon:TagIcon, restricted:true },
+    { to:'/admin/import',      labelKey:'nav_import_export', Icon:UploadIcon, restricted:true },
   ]},
   { sectionKey:'section_configuration', items: [
-    { to:'/admin/outlets',     labelKey:'nav_outlets',       Icon:MapPinIcon },
-    { to:'/admin/delivery',    labelKey:'nav_delivery',      Icon:PackageIcon },
-    { to:'/admin/languages',   labelKey:'nav_languages',     Icon:GlobeIcon },
+    { to:'/admin/outlets',     labelKey:'nav_outlets',       Icon:MapPinIcon, restricted:true },
+    { to:'/admin/delivery',    labelKey:'nav_delivery',      Icon:PackageIcon, restricted:true },
+    { to:'/admin/languages',   labelKey:'nav_languages',     Icon:GlobeIcon, restricted:true },
     { to:'/admin/allergens',   labelKey:'nav_allergens',     Icon:AlertIcon },
   ]},
   { sectionKey:'section_marketing', items: [
-    { to:'/admin/media',       labelKey:'nav_media',         Icon:ImageIcon },
-    { to:'/admin/social',      labelKey:'nav_social',        Icon:ShareIcon },
-    { to:'/admin/info-pages',  labelKey:'nav_info_pages',    Icon:InfoIcon },
-    { to:'/admin/campaigns',   labelKey:'nav_campaigns',     Icon:MegaphoneIcon },
-    { to:'/admin/survey',      labelKey:'nav_survey',        Icon:ClipboardIcon },
+    { to:'/admin/media',       labelKey:'nav_media',         Icon:ImageIcon, restricted:true },
+    { to:'/admin/social',      labelKey:'nav_social',        Icon:ShareIcon, restricted:true },
+    { to:'/admin/info-pages',  labelKey:'nav_info_pages',    Icon:InfoIcon, restricted:true },
+    { to:'/admin/campaigns',   labelKey:'nav_campaigns',     Icon:MegaphoneIcon, restricted:true },
+    { to:'/admin/survey',      labelKey:'nav_survey',        Icon:ClipboardIcon, restricted:true },
   ]},
   { sectionKey:'section_management', items: [
     { to:'/admin/tables',      labelKey:'tables',            Icon:TableIcon },
-    { to:'/admin/staff',       labelKey:'staff',             Icon:UsersIcon },
-    { to:'/admin/reports',     labelKey:'reports',           Icon:ReportIcon },
+    { to:'/admin/staff',       labelKey:'staff',             Icon:UsersIcon, restricted:true },
+    { to:'/admin/reports',     labelKey:'reports',           Icon:ReportIcon, restricted:true },
     { to:'/admin/settings',    labelKey:'settings',          Icon:CogIcon },
   ]},
 ]
@@ -81,6 +82,8 @@ export default function AdminLayout() {
   const { t, i18n } = useTranslation()
   const [mini, setMini] = useState(false)
   const [menuUrl, setMenuUrl] = useState(null)
+  const [tenantPlan, setTenantPlan] = useState(null)
+  const [lockMsg, setLockMsg] = useState(null)
 
   useEffect(() => {
     if (!profile?.restaurant_id) return
@@ -96,8 +99,24 @@ export default function AdminLayout() {
     return () => { active = false }
   }, [profile?.restaurant_id])
 
+  useEffect(() => {
+    if (!profile?.tenant_id) return
+    let active = true
+    supabase.from('tenants').select('plan').eq('id', profile.tenant_id).single().then(({ data }) => {
+      if (active) setTenantPlan(data?.plan || null)
+    })
+    return () => { active = false }
+  }, [profile?.tenant_id])
+
+  function showLockMsg() {
+    setLockMsg(t('feature_locked_msg'))
+    clearTimeout(showLockMsg._t)
+    showLockMsg._t = setTimeout(() => setLockMsg(null), 3200)
+  }
+
   const out = async () => { await signOut(); navigate('/login') }
   const isSA = profile?.role === 'super_admin'
+  const isLocked = (item) => item.restricted && tenantPlan === 'basic' && !isSA
 
   return (
     <div style={{display:'flex',height:'100vh',background:'#f5f5f3',fontFamily:'Inter,system-ui,sans-serif',fontSize:14}}>
@@ -128,18 +147,41 @@ export default function AdminLayout() {
                   {t(g.sectionKey)}
                 </p>
               )}
-              {g.items.map(item=>(
-                <NavLink key={item.to} to={item.to} end={item.end}
-                  title={mini ? t(item.labelKey) : undefined}
-                  className={({isActive})=>`nl${isActive?' on':''}`}
-                  style={{justifyContent:mini?'center':'flex-start'}}>
-                  <item.Icon />
-                  {!mini && <span style={{flex:1}}>{t(item.labelKey)}</span>}
-                  {!mini && item.dot && <span style={{width:7,height:7,borderRadius:'50%',background:'#1D9E75',flexShrink:0}}/>}
-                </NavLink>
-              ))}
+              {g.items.map(item=>{
+                const locked = isLocked(item)
+                if (locked) {
+                  return (
+                    <button key={item.to} onClick={showLockMsg}
+                      title={mini ? t(item.labelKey) : undefined}
+                      className="nl"
+                      style={{justifyContent:mini?'center':'flex-start', opacity:.45, cursor:'pointer', background:'none', border:'none', width:'100%', textAlign:'left'}}>
+                      <item.Icon />
+                      {!mini && <span style={{flex:1}}>{t(item.labelKey)}</span>}
+                      {!mini && <LockIcon />}
+                    </button>
+                  )
+                }
+                return (
+                  <NavLink key={item.to} to={item.to} end={item.end}
+                    title={mini ? t(item.labelKey) : undefined}
+                    className={({isActive})=>`nl${isActive?' on':''}`}
+                    style={{justifyContent:mini?'center':'flex-start'}}>
+                    <item.Icon />
+                    {!mini && <span style={{flex:1}}>{t(item.labelKey)}</span>}
+                    {!mini && item.dot && <span style={{width:7,height:7,borderRadius:'50%',background:'#1D9E75',flexShrink:0}}/>}
+                  </NavLink>
+                )
+              })}
             </div>
           ))}
+
+          {lockMsg && (
+            <div style={{position:'fixed',bottom:70,left:'50%',transform:'translateX(-50%)',background:'#111',color:'#fff',
+              borderRadius:12,padding:'10px 18px',fontSize:12.5,fontWeight:600,boxShadow:'0 8px 30px rgba(0,0,0,.3)',
+              zIndex:200,whiteSpace:'nowrap'}}>
+              🔒 {lockMsg}
+            </div>
+          )}
 
           {isSA && (
             <div style={{marginBottom:14}}>
