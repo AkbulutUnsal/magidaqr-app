@@ -272,7 +272,8 @@ export default function MenuPage() {
                   <span style={{ fontSize:11, fontWeight:800,
                     color: restaurant?.cover_url ? '#fff' : brand }}>
                     Masa <span style={{ fontSize:14 }}>{tableInfo.table_number}</span>
-                    {tableInfo.label ? <span style={{ fontWeight:500, fontSize:10 }}> {tableInfo.label}</span> : ''}
+                    {tableInfo.label && tableInfo.label.trim().toLowerCase() !== `masa ${tableInfo.table_number}`.toLowerCase()
+                      ? <span style={{ fontWeight:500, fontSize:10 }}> {tableInfo.label}</span> : ''}
                   </span>
                 </div>
               )}
