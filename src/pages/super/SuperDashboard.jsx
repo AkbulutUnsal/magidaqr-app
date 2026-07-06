@@ -101,30 +101,49 @@ export default function SuperDashboard() {
 
   async function deleteTenant(id) {
     setDeletingId(id)
+    setMsg('')
     try {
-      // Sırayla sil (cascade yoksa)
-      const { data: rests } = await supabase.from('restaurants').select('id').eq('tenant_id', id)
+      const { data: rests, error: rErr } = await supabase.from('restaurants').select('id').eq('tenant_id', id)
+      if (rErr) throw rErr
       const restIds = (rests || []).map(r => r.id)
 
       if (restIds.length > 0) {
-        // order_items → orders → menu_items → menu_categories → tables → restaurants
-        const { data: orders } = await supabase.from('orders').select('id').in('restaurant_id', restIds)
+        const { data: orders, error: oErr } = await supabase.from('orders').select('id').in('restaurant_id', restIds)
+        if (oErr) throw oErr
         const orderIds = (orders || []).map(o => o.id)
+
         if (orderIds.length > 0) {
-          await supabase.from('order_items').delete().in('order_id', orderIds)
-          await supabase.from('orders').delete().in('id', orderIds)
+          let res = await supabase.from('order_items').delete().in('order_id', orderIds)
+          if (res.error) throw res.error
+          res = await supabase.from('orders').delete().in('id', orderIds)
+          if (res.error) throw res.error
         }
-        await supabase.from('menu_items').delete().in('restaurant_id', restIds)
-        await supabase.from('menu_categories').delete().in('restaurant_id', restIds)
-        await supabase.from('tables').delete().in('restaurant_id', restIds)
-        await supabase.from('restaurants').delete().in('id', restIds)
+
+        // FK sırasına göre: masalara/menüye bağımlı olanlar önce, tables/restaurants en son
+        const childTables = [
+          'table_calls', 'menu_items', 'outlets', 'allergens',
+          'menu_categories', 'hero_cards', 'campaigns', 'info_pages', 'tables',
+        ]
+        for (const table of childTables) {
+          const { error } = await supabase.from(table).delete().in('restaurant_id', restIds)
+          if (error) throw error
+        }
+
+        // Personel profilleri (waiter/kitchen/admin) — restaurants silinmeden önce temizlenmeli
+        const { error: pErr } = await supabase.from('profiles').delete().eq('tenant_id', id)
+        if (pErr) throw pErr
+
+        const { error: restDelErr } = await supabase.from('restaurants').delete().in('id', restIds)
+        if (restDelErr) throw restDelErr
       }
 
-      await supabase.from('tenants').delete().eq('id', id)
+      const { error: tErr } = await supabase.from('tenants').delete().eq('id', id)
+      if (tErr) throw tErr
+
       setConfirmDelete(null)
       loadTenants()
     } catch(e) {
-      setMsg('❌ Silinemedi: ' + (e.message || JSON.stringify(e)))
+      setMsg('❌ Silinemedi: ' + (e.message || e.details || JSON.stringify(e)))
     }
     setDeletingId(null)
   }
