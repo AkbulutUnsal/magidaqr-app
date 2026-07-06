@@ -166,6 +166,7 @@ export default function AdminStaff() {
             <tr>
               <th>Personel</th>
               <th>Rol</th>
+              <th>E-posta</th>
               <th>Giriş Adresi</th>
               <th>Durum</th>
               <th></th>
@@ -174,7 +175,7 @@ export default function AdminStaff() {
           <tbody>
             {staff.length === 0 ? (
               <tr>
-                <td colSpan={5} style={{ textAlign:'center', color:'#aaa', padding:32 }}>
+                <td colSpan={6} style={{ textAlign:'center', color:'#aaa', padding:32 }}>
                   Henüz personel yok — yukarıdan ekleyin
                 </td>
               </tr>
@@ -205,6 +206,9 @@ export default function AdminStaff() {
                   }}>
                     {ROLE_LABELS[s.role] || s.role}
                   </span>
+                </td>
+                <td style={{ fontSize:12, color:'#444', fontFamily:'monospace' }}>
+                  {s.email || '—'}
                 </td>
                 <td style={{ fontSize:12, color:'#888', fontFamily:'monospace' }}>
                   {origin}{s.role === 'kitchen' ? '/kitchen' : s.role === 'waiter' ? '/waiter' : '/admin'}
