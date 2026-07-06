@@ -386,25 +386,73 @@ export default function MenuPage() {
         {/* Menü başlangıcı */}
         <div id="menu-start" />
 
+        {/* Kategori sekmeleri — yatay, ikon + isim */}
+        {categories.length > 0 && (
+          <div className="cat-scroll" style={{ display:'flex', gap:8, overflowX:'auto', padding:'4px 16px 14px',
+            scrollbarWidth:'none', WebkitOverflowScrolling:'touch' }}>
+            <button onClick={() => selectCategory(null)}
+              style={{ flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', gap:5,
+                padding:'10px 16px', borderRadius:16, border:'none', cursor:'pointer',
+                background: !activeCategory ? brand : '#fff',
+                boxShadow: !activeCategory ? `0 4px 14px ${brand}40` : '0 1px 4px rgba(0,0,0,0.06)' }}>
+              {(CAT_ICONS.all)(!activeCategory ? '#fff' : '#999')}
+              <span style={{ fontSize:11, fontWeight:700, color: !activeCategory ? '#fff' : '#666', whiteSpace:'nowrap' }}>
+                {t('all_categories')}
+              </span>
+            </button>
+            {categories.map(cat => {
+              const isActive = activeCategory === cat.id
+              return (
+                <button key={cat.id} onClick={() => selectCategory(cat.id)}
+                  style={{ flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', gap:5,
+                    padding:'10px 16px', borderRadius:16, border:'none', cursor:'pointer',
+                    background: isActive ? brand : '#fff',
+                    boxShadow: isActive ? `0 4px 14px ${brand}40` : '0 1px 4px rgba(0,0,0,0.06)' }}>
+                  {(CAT_ICONS[cat.icon] || CAT_ICONS.default)(isActive ? '#fff' : '#999')}
+                  <span style={{ fontSize:11, fontWeight:700, color: isActive ? '#fff' : '#666', whiteSpace:'nowrap' }}>
+                    {n(cat)}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        )}
+
         {/* Kategoriler + ürünler */}
         <div style={{ padding:'12px 16px 0' }}>
           {categories.filter(cat => !activeCategory || cat.id === activeCategory).map(cat => {
             const catItems = filteredItems.filter(i => i.category_id === cat.id)
             if (catItems.length === 0) return null
+            const catDesc = n(cat, 'description')
             return (
               <div key={cat.id} id={`cat-${cat.id}`} style={{ marginBottom:28 }}>
-                {/* Kategori başlığı */}
-                <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
-                  <div style={{ width:32, height:32, borderRadius:10, background:brand+'15',
-                    display:'flex', alignItems:'center', justifyContent:'center' }}>
-                    {(CAT_ICONS[cat.icon] || CAT_ICONS.default)(brand)}
+                {/* Kategori "hero" başlığı */}
+                <div style={{ borderRadius:18, padding:'18px 18px', marginBottom:16,
+                  background:`linear-gradient(135deg, ${brand}, ${brand}cc)`, position:'relative', overflow:'hidden' }}>
+                  <div style={{ position:'absolute', right:-20, top:-20, width:120, height:120, borderRadius:'50%', background:'rgba(255,255,255,0.08)' }}/>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom: catDesc ? 8 : 4, position:'relative' }}>
+                    <div style={{ width:34, height:34, borderRadius:10, background:'rgba(255,255,255,0.2)',
+                      display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                      {(CAT_ICONS[cat.icon] || CAT_ICONS.default)('#fff')}
+                    </div>
+                    <h2 style={{ fontSize:19, fontWeight:800, color:'#fff', margin:0 }}>{n(cat)}</h2>
                   </div>
-                  <h2 style={{ fontSize:16, fontWeight:800, color:'#111', margin:0 }}>{n(cat)}</h2>
+                  {catDesc && (
+                    <p style={{ fontSize:12.5, color:'rgba(255,255,255,0.9)', margin:'0 0 6px', lineHeight:1.5, position:'relative' }}>
+                      {catDesc}
+                    </p>
+                  )}
+                  <p style={{ fontSize:11, color:'rgba(255,255,255,0.75)', margin:0, fontWeight:600, position:'relative' }}>
+                    {catItems.length} {lang==='tr'?'ürün':lang==='ka'?'პროდუქტი':lang==='ru'?'блюд':'items'}
+                  </p>
                 </div>
 
                 {/* Ürün listesi — tek sütun, daha büyük */}
                 <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-                  {catItems.map((item, idx) => (
+                  {catItems.map((item, idx) => {
+                    const isNew = item.created_at && (Date.now() - new Date(item.created_at).getTime()) < 14*24*60*60*1000
+                    const itemAllergens = (item.allergen_ids || []).map(aid => allergens.find(a => a.id === aid)).filter(Boolean)
+                    return (
                     <div key={item.id} className="item-card"
                       onClick={() => openDetail(item)}
                       style={{ background:'#fff', borderRadius:18, overflow:'hidden', cursor:'pointer',
@@ -421,12 +469,39 @@ export default function MenuPage() {
                       {/* Sağ — bilgi + ekle */}
                       <div style={{ flex:1, padding:'12px 12px 12px 14px', display:'flex', flexDirection:'column', justifyContent:'space-between', minWidth:0 }}>
                         <div>
+                          {/* Rozetler */}
+                          {(item.is_featured || item.is_chef_pick || isNew) && (
+                            <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginBottom:5 }}>
+                              {item.is_featured && (
+                                <span style={{ fontSize:9, fontWeight:800, color:'#fff', background:'#f59e0b', padding:'2px 7px', borderRadius:6 }}>
+                                  {lang==='tr'?'Popüler':lang==='ka'?'პოპულარული':lang==='ru'?'Популярно':'Popular'}
+                                </span>
+                              )}
+                              {item.is_chef_pick && (
+                                <span style={{ fontSize:9, fontWeight:800, color:'#fff', background:'#8b5cf6', padding:'2px 7px', borderRadius:6 }}>
+                                  {lang==='tr'?'Şef Önerisi':lang==='ka'?'შეფის რჩევა':lang==='ru'?'Выбор шефа':"Chef's Pick"}
+                                </span>
+                              )}
+                              {isNew && (
+                                <span style={{ fontSize:9, fontWeight:800, color:'#fff', background:brand, padding:'2px 7px', borderRadius:6 }}>
+                                  {lang==='tr'?'Yeni':lang==='ka'?'ახალი':lang==='ru'?'Новинка':'New'}
+                                </span>
+                              )}
+                            </div>
+                          )}
                           <h3 style={{ fontSize:14, fontWeight:700, margin:'0 0 4px', color:'#111', lineHeight:1.3 }}>{n(item)}</h3>
                           {n(item,'description') && (
-                            <p style={{ fontSize:11, color:'#999', margin:'0 0 8px', lineHeight:1.5,
+                            <p style={{ fontSize:11, color:'#999', margin:'0 0 6px', lineHeight:1.5,
                               display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
                               {n(item,'description')}
                             </p>
+                          )}
+                          {itemAllergens.length > 0 && (
+                            <div style={{ display:'flex', gap:3, marginBottom:6 }}>
+                              {itemAllergens.slice(0,5).map(a => (
+                                <span key={a.id} title={n(a)} style={{ fontSize:12, lineHeight:1 }}>{a.icon}</span>
+                              ))}
+                            </div>
                           )}
                         </div>
                         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
@@ -454,7 +529,8 @@ export default function MenuPage() {
                         </div>
                       </div>
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             )

@@ -297,7 +297,7 @@ function ItemFormModal({ item, categories, allergens, outlets, dispName, onSave,
     description_en: item?.description_en || '',
     price: item?.price ?? '', calories: item?.calories ?? '', category_id: item?.category_id || '',
     image_url: item?.image_url || '', is_available: item?.is_available ?? true,
-    is_featured: item?.is_featured ?? false, goes_to_kitchen: item?.goes_to_kitchen ?? true,
+    is_featured: item?.is_featured ?? false, is_chef_pick: item?.is_chef_pick ?? false, goes_to_kitchen: item?.goes_to_kitchen ?? true,
     allergen_ids: item?.allergen_ids || [],
     ...(item && 'outlet_id' in item ? { outlet_id: item.outlet_id || '' } : {}),
   })
@@ -390,6 +390,7 @@ function ItemFormModal({ item, categories, allergens, outlets, dispName, onSave,
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, background: '#fafafa', borderRadius: 12, padding: 14 }}>
             <Check label={t('available_checkbox')} checked={form.is_available} onChange={v => set('is_available', v)} />
             <Check label={t('featured_checkbox')} checked={form.is_featured} onChange={v => set('is_featured', v)} />
+            <Check label={t('chef_pick_checkbox')} checked={form.is_chef_pick} onChange={v => set('is_chef_pick', v)} />
             <Check label={t('goes_to_kitchen_checkbox')} checked={form.goes_to_kitchen} onChange={v => set('goes_to_kitchen', v)} />
           </div>
         </div>

@@ -156,5 +156,6 @@
   "update_password_button": "Şifreyi Güncelle",
   "password_mismatch": "Şifreler eşleşmiyor",
   "password_updated_success": "Şifren güncellendi! Giriş sayfasına yönlendiriliyorsun...",
-  "feature_locked_msg": "Bu özellik Gelişmiş pakette. Yükseltmek için bize ulaşın."
+  "feature_locked_msg": "Bu özellik Gelişmiş pakette. Yükseltmek için bize ulaşın.",
+  "chef_pick_checkbox": "👨‍🍳 Şef önerisi"
 }
