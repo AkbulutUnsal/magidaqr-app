@@ -7,7 +7,7 @@ export default function SuperDashboard() {
   const [tenants, setTenants] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
-  const [form, setForm] = useState({ name:'', email:'', plan:'basic', slug:'', ai_addon:false })
+  const [form, setForm] = useState({ name:'', email:'', phone:'', plan:'basic', slug:'', ai_addon:false })
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
   const [deletingId, setDeletingId] = useState(null)
@@ -37,14 +37,16 @@ export default function SuperDashboard() {
     const slug = form.slug.trim()
     const name = form.name.trim()
     const email = form.email.trim()
+    const phone = form.phone.trim()
     if (!name) return setMsg('❌ Firma adı zorunlu')
     if (!slug) return setMsg('❌ Slug zorunlu')
+    if (!phone) return setMsg('❌ Telefon zorunlu')
 
     setSaving(true); setMsg('')
     try {
       const { data: tenant, error: te } = await supabase
         .from('tenants')
-        .insert({ name, plan: form.plan, slug, is_active: true, ai_addon: form.ai_addon,
+        .insert({ name, plan: form.plan, slug, phone, is_active: true, ai_addon: form.ai_addon,
           plan_expires_at: new Date(Date.now() + 14*24*60*60*1000).toISOString() })
         .select().single()
       if (te) throw te
@@ -54,6 +56,8 @@ export default function SuperDashboard() {
         .insert({ tenant_id: tenant.id, name_en: name, name_ka: name, slug, is_active: true })
         .select().single()
       if (re) throw re
+
+      let warnings = ''
 
       if (email) {
         const defaultPassword = slug + '2024!'
@@ -67,9 +71,9 @@ export default function SuperDashboard() {
         if (!res.ok) throw new Error('Kullanıcı oluşturulamadı: ' + result.error)
         setMsg(`✅ Firma eklendi! Giriş: ${email} / ${defaultPassword}`)
 
-        // Welcome email gönder
+        // Welcome email gönder — artık hata sessizce yutulmuyor
         try {
-          await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-welcome`, {
+          const emailRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-welcome`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -83,14 +87,22 @@ export default function SuperDashboard() {
               plan: form.plan,
             }),
           })
+          if (!emailRes.ok) {
+            const emailResult = await emailRes.json().catch(() => ({}))
+            warnings += ` (⚠️ Hoşgeldin maili gönderilemedi: ${emailResult.error || emailRes.status})`
+          }
         } catch(emailErr) {
-          console.warn('Email gönderilemedi:', emailErr)
+          warnings += ` (⚠️ Hoşgeldin maili gönderilemedi: ${emailErr.message})`
         }
+
+        // TODO: WhatsApp'tan giriş bilgisi gönderimi — Evolution API entegrasyonu eklenecek
       } else {
         setMsg('✅ Firma başarıyla eklendi!')
       }
 
-      setForm({ name:'', email:'', plan:'basic', slug:'', ai_addon:false })
+      if (warnings) setMsg(m => m + warnings)
+
+      setForm({ name:'', email:'', phone:'', plan:'basic', slug:'', ai_addon:false })
       setShowAdd(false)
       loadTenants()
     } catch(e) {
@@ -316,6 +328,15 @@ export default function SuperDashboard() {
                 placeholder="admin@firma.com"
                 style={{width:'100%',padding:'9px 12px',border:'1.5px solid #e8e8e4',borderRadius:8,fontSize:13,outline:'none',fontFamily:'inherit'}}
                 onFocus={e=>e.target.style.borderColor='#1D9E75'} onBlur={e=>e.target.style.borderColor='#e8e8e4'}/>
+            </div>
+
+            <div style={{marginBottom:14}}>
+              <label style={{fontSize:12,fontWeight:600,color:'#666',display:'block',marginBottom:4}}>Telefon (WhatsApp) *</label>
+              <input type="tel" value={form.phone} onChange={e=>setForm(p=>({...p,phone:e.target.value}))}
+                placeholder="+995 5XX XX XX XX"
+                style={{width:'100%',padding:'9px 12px',border:'1.5px solid #e8e8e4',borderRadius:8,fontSize:13,outline:'none',fontFamily:'inherit'}}
+                onFocus={e=>e.target.style.borderColor='#1D9E75'} onBlur={e=>e.target.style.borderColor='#e8e8e4'}/>
+              <p style={{fontSize:10,color:'#aaa',marginTop:4}}>Giriş bilgileri WhatsApp'tan da bu numaraya gönderilecek</p>
             </div>
 
             <div style={{marginBottom:14}}>
