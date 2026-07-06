@@ -64,7 +64,7 @@ export default function SuperDashboard() {
 
       const { data: rest, error: re } = await supabase
         .from('restaurants')
-        .insert({ tenant_id: tenant.id, name_en: name, name_ka: name, slug, is_active: true })
+        .insert({ tenant_id: tenant.id, name_en: name, name_ka: name, slug, is_active: true, plan: form.plan })
         .select().single()
       if (re) throw re
       createdRestId = rest.id
@@ -532,6 +532,7 @@ export default function SuperDashboard() {
                       <button onClick={async()=>{
                           const newPlan = t.plan === 'advanced' ? 'basic' : 'advanced'
                           await supabase.from('tenants').update({ plan: newPlan }).eq('id', t.id)
+                          await supabase.from('restaurants').update({ plan: newPlan }).eq('tenant_id', t.id)
                           loadTenants()
                         }}
                         style={{width:30,height:30,display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,fontWeight:700,

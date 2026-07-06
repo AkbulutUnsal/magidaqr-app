@@ -90,23 +90,15 @@ export default function AdminLayout() {
     let active = true
     ;(async () => {
       const [{ data: rest }, { data: tbl }] = await Promise.all([
-        supabase.from('restaurants').select('slug').eq('id', profile.restaurant_id).single(),
+        supabase.from('restaurants').select('slug, plan').eq('id', profile.restaurant_id).single(),
         supabase.from('tables').select('id').eq('restaurant_id', profile.restaurant_id).order('table_number').limit(1),
       ])
       if (!active) return
       if (rest?.slug && tbl?.[0]?.id) setMenuUrl(`/menu/${rest.slug}/${tbl[0].id}`)
+      setTenantPlan(rest?.plan || null)
     })()
     return () => { active = false }
   }, [profile?.restaurant_id])
-
-  useEffect(() => {
-    if (!profile?.tenant_id) return
-    let active = true
-    supabase.from('tenants').select('plan').eq('id', profile.tenant_id).single().then(({ data }) => {
-      if (active) setTenantPlan(data?.plan || null)
-    })
-    return () => { active = false }
-  }, [profile?.tenant_id])
 
   function showLockMsg() {
     setLockMsg(t('feature_locked_msg'))
