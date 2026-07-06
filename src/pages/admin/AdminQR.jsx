@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useAuth } from '../../hooks/useAuth'
 import { supabase } from '../../lib/supabase'
 import QRCodeStyling from 'qr-code-styling'
 
@@ -83,6 +84,7 @@ function CornerPreview({ type, active }) {
 }
 
 export default function AdminQR() {
+  const { profile } = useAuth()
   const [restaurant, setRestaurant] = useState(null)
   const [tables, setTables] = useState([])
   const [categories, setCategories] = useState([])
@@ -117,17 +119,20 @@ export default function AdminQR() {
   const qrRef = useRef(null)
   const fileInputRef = useRef(null)
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { if (profile?.restaurant_id) load() }, [profile?.restaurant_id])
 
   async function load() {
-    const { data: rest } = await supabase.from('restaurants').select('*').limit(1).single()
+    const { data: rest } = await supabase.from('restaurants').select('*').eq('id', profile.restaurant_id).single()
     setRestaurant(rest)
     if (rest) {
-      setTargetUrl(buildUrl.home(rest.slug))
-      const logo = rest.logo_url || rest.logo || rest.image_url || null
-      setBusinessLogo(logo)
       const { data: t } = await supabase.from('tables').select('*').eq('restaurant_id', rest.id).order('table_number')
       setTables(t || [])
+      // "Ana Sayfa" hedefi olarak ilk masayı kullan — /menu/:slug tek başına (masasız)
+      // uygulamanın rota yapısında (/menu/:slug/:tableId) karşılığı yok, login'e düşer.
+      const homeUrl = t?.[0] ? buildUrl.table(rest.slug, t[0].id) : buildUrl.home(rest.slug)
+      setTargetUrl(homeUrl)
+      const logo = rest.logo_url || rest.logo || rest.image_url || null
+      setBusinessLogo(logo)
       const { data: c } = await supabase.from('menu_categories').select('*').eq('restaurant_id', rest.id).order('name')
       setCategories(c || [])
     }
@@ -253,6 +258,7 @@ export default function AdminQR() {
   const cardIcon = { width: 32, height: 32, borderRadius: 9, background: GREEN_BG, display: 'flex', alignItems: 'center', justifyContent: 'center' }
   const cardTitle = { fontSize: 15, fontWeight: 700 }
   const miniLabel = { fontSize: 11, fontWeight: 700, color: MUTED, letterSpacing: '.04em', textTransform: 'uppercase', display: 'block', marginBottom: 8 }
+  const homeUrl = restaurant ? (tables[0] ? buildUrl.table(restaurant.slug, tables[0].id) : buildUrl.home(restaurant.slug)) : ''
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
@@ -262,12 +268,17 @@ export default function AdminQR() {
           <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 4 }}>QR Stüdyo</h1>
           <p style={{ fontSize: 13, color: MUTED }}>Logolu, özel renkli QR kodları üret ve indir</p>
         </div>
-        {restaurant && (
-          <a href={buildUrl.home(restaurant.slug)} target="_blank" rel="noreferrer"
+        {restaurant && tables.length > 0 ? (
+          <a href={homeUrl} target="_blank" rel="noreferrer"
             style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '9px 16px', border: `1px solid ${BORDER}`, borderRadius: 9, fontSize: 13, fontWeight: 600, color: '#333', textDecoration: 'none', background: '#fff' }}>
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
             Menüyü Gör
           </a>
+        ) : restaurant && (
+          <span title="Önce bir masa ekleyin"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '9px 16px', border: `1px solid ${BORDER}`, borderRadius: 9, fontSize: 13, fontWeight: 600, color: '#bbb', background: '#f9f9f7' }}>
+            Menüyü Gör
+          </span>
         )}
       </div>
 
@@ -287,8 +298,8 @@ export default function AdminQR() {
 
             <p style={{ ...miniLabel, marginTop: 16 }}>Hızlı Seçim</p>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {restaurant && (
-                <Chip active={targetLabel === 'Ana Sayfa'} onClick={() => setTarget(buildUrl.home(restaurant.slug), 'Ana Sayfa')}>Ana Sayfa</Chip>
+              {restaurant && tables.length > 0 && (
+                <Chip active={targetLabel === 'Ana Sayfa'} onClick={() => setTarget(buildUrl.table(restaurant.slug, tables[0].id), 'Ana Sayfa')}>Ana Sayfa</Chip>
               )}
               {tables.slice(0, 3).map(t => (
                 <Chip key={t.id} active={targetLabel === `Masa ${t.table_number}`} onClick={() => setTarget(buildUrl.table(restaurant.slug, t.id), `Masa ${t.table_number}`)}>Masa {t.table_number}</Chip>
