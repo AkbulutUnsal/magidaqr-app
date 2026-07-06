@@ -76,8 +76,20 @@ export default function AdminStaff() {
     if (!confirm('Bu personeli kaldırmak istediğinizden emin misiniz?')) return
     setDeletingId(id)
     const { data: { session } } = await supabase.auth.getSession()
-    // Sadece profiles'tan sil (auth user kalır ama giriş yapamaz)
-    await supabase.from('profiles').delete().eq('id', id)
+    // Hem profili hem auth hesabını sil — yoksa aynı e-posta bir daha kullanılamaz
+    try {
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ user_id: id }),
+      })
+      if (!res.ok) {
+        // Edge function başarısız olursa en azından profili sil (eski davranış, yedek olarak)
+        await supabase.from('profiles').delete().eq('id', id)
+      }
+    } catch (e) {
+      await supabase.from('profiles').delete().eq('id', id)
+    }
     setDeletingId(null)
     loadStaff()
   }
