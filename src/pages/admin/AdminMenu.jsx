@@ -27,7 +27,7 @@ function money(v) {
 }
 
 export default function AdminMenu() {
-  const { i18n } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { profile } = useAuth()
   const lang = (i18n.language || 'tr').slice(0, 2)
 
@@ -79,7 +79,7 @@ export default function AdminMenu() {
   }
 
   async function deleteItem(id) {
-    if (!confirm('Bu ürünü silmek istediğine emin misin?')) return
+    if (!confirm(t('confirm_delete_item'))) return
     await supabase.from('menu_items').delete().eq('id', id)
     setItems(prev => prev.filter(i => i.id !== id))
     setSelected(prev => prev.filter(x => x !== id))
@@ -87,7 +87,7 @@ export default function AdminMenu() {
 
   async function bulkDelete() {
     if (selected.length === 0) return
-    if (!confirm(`${selected.length} ürünü silmek istediğine emin misin?`)) return
+    if (!confirm(t('confirm_delete_items', { count: selected.length }))) return
     await supabase.from('menu_items').delete().in('id', selected)
     setItems(prev => prev.filter(i => !selected.includes(i.id)))
     setSelected([])
@@ -141,11 +141,11 @@ export default function AdminMenu() {
   function toggleOne(id) { setSelected(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]) }
 
   const SORT_OPTS = [
-    { v: 'default', label: 'Varsayılan sıra' },
-    { v: 'name', label: 'İsim (A → Z)' },
-    { v: 'price_asc', label: 'Fiyat (artan)' },
-    { v: 'price_desc', label: 'Fiyat (azalan)' },
-    { v: 'newest', label: 'Yeni → Eski' },
+    { v: 'default', label: t('sort_default') },
+    { v: 'name', label: t('sort_name') },
+    { v: 'price_asc', label: t('sort_price_asc') },
+    { v: 'price_desc', label: t('sort_price_desc') },
+    { v: 'newest', label: t('sort_newest') },
   ]
 
   return (
@@ -153,16 +153,16 @@ export default function AdminMenu() {
       {/* Başlık */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 4 }}>Ürünler</h1>
-          <p style={{ fontSize: 13, color: MUTED }}>{items.length} ürün</p>
+          <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 4 }}>{t('items')}</h1>
+          <p style={{ fontSize: 13, color: MUTED }}>{t('menu_item_count', { count: items.length })}</p>
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <button onClick={() => { setSelectMode(s => !s); setSelected([]) }} style={btnGhost(selectMode)}>
-            <CheckSquareIcon /> {selectMode ? 'Vazgeç' : 'Seç'}
+            <CheckSquareIcon /> {selectMode ? t('deselect') : t('select_mode')}
           </button>
           <div style={{ position: 'relative' }}>
             <button onClick={() => setSortOpen(o => !o)} style={btnGhost(false)}>
-              <SortIcon /> Sırala
+              <SortIcon /> {t('sort_label')}
             </button>
             {sortOpen && (
               <>
@@ -180,7 +180,7 @@ export default function AdminMenu() {
           </div>
           <button onClick={() => { setEditItem(null); setShowForm(true) }}
             style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 18px', background: GREEN, color: '#fff', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(29,158,117,.3)' }}>
-            <PlusIcon /> Ürün Ekle
+            <PlusIcon /> {t('add_item')}
           </button>
         </div>
       </div>
@@ -189,34 +189,34 @@ export default function AdminMenu() {
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
         {hasOutletLink && outlets.length > 0 && (
           <select value={outletFilter} onChange={e => setOutletFilter(e.target.value)} style={selectStyle}>
-            <option value="">Tüm Outletler</option>
+            <option value="">{t('all_outlets')}</option>
             {outlets.map(o => <option key={o.id} value={o.id}>{o.name || dispName(o)}</option>)}
           </select>
         )}
         <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
           <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2" style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)' }}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Ürün ara..."
+          <input value={q} onChange={e => setQ(e.target.value)} placeholder={t('search_products')}
             style={{ width: '100%', padding: '10px 14px 10px 36px', border: `1px solid ${BORDER}`, borderRadius: 10, fontSize: 13, background: '#fff', boxSizing: 'border-box' }} />
         </div>
         <select value={catFilter} onChange={e => setCatFilter(e.target.value)} style={selectStyle}>
-          <option value="">Tüm Kategoriler</option>
+          <option value="">{t('all_categories_full')}</option>
           {categories.map(c => <option key={c.id} value={c.id}>{dispName(c)}</option>)}
         </select>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ ...selectStyle, minWidth: 110 }}>
-          <option value="all">Tümü</option>
-          <option value="active">Mevcut</option>
-          <option value="passive">Pasif</option>
+          <option value="all">{t('all_categories')}</option>
+          <option value="active">{t('available')}</option>
+          <option value="passive">{t('status_passive')}</option>
         </select>
       </div>
 
       {/* Tablo */}
       <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 14, overflow: 'hidden' }}>
         {loading ? (
-          <div style={{ padding: 56, textAlign: 'center', color: '#bbb' }}>Yükleniyor...</div>
+          <div style={{ padding: 56, textAlign: 'center', color: '#bbb' }}>{t('loading')}</div>
         ) : visible.length === 0 ? (
           <div style={{ padding: 56, textAlign: 'center', color: '#bbb' }}>
             <div style={{ fontSize: 40, marginBottom: 10 }}>🍽️</div>
-            <p style={{ fontSize: 14 }}>{items.length === 0 ? 'Henüz ürün eklenmemiş.' : 'Filtreye uyan ürün yok.'}</p>
+            <p style={{ fontSize: 14 }}>{items.length === 0 ? t('no_items_yet') : t('no_items_match_filter')}</p>
           </div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -225,14 +225,14 @@ export default function AdminMenu() {
                 {selectMode && (
                   <th style={{ ...th, width: 44 }}><input type="checkbox" checked={allChecked} onChange={toggleAll} style={{ cursor: 'pointer', accentColor: GREEN }} /></th>
                 )}
-                <th style={{ ...th, width: 70 }}>Görsel</th>
-                <th style={th}>Ad</th>
-                <th style={th}>Kategori</th>
-                <th style={{ ...th, textAlign: 'right' }}>Fiyat</th>
-                <th style={{ ...th, textAlign: 'center', width: 90 }}>Öne Çıkar</th>
-                <th style={{ ...th, textAlign: 'center', width: 80 }}>Durum</th>
-                {hasSoldOut && <th style={{ ...th, textAlign: 'center', width: 80 }}>Tükendi</th>}
-                <th style={{ ...th, textAlign: 'right', width: 90 }}>İşlem</th>
+                <th style={{ ...th, width: 70 }}>{t('image')}</th>
+                <th style={th}>{t('name')}</th>
+                <th style={th}>{t('category_singular')}</th>
+                <th style={{ ...th, textAlign: 'right' }}>{t('price')}</th>
+                <th style={{ ...th, textAlign: 'center', width: 90 }}>{t('highlight_action')}</th>
+                <th style={{ ...th, textAlign: 'center', width: 80 }}>{t('status_label')}</th>
+                {hasSoldOut && <th style={{ ...th, textAlign: 'center', width: 80 }}>{t('sold_out')}</th>}
+                <th style={{ ...th, textAlign: 'right', width: 90 }}>{t('action_label')}</th>
               </tr>
             </thead>
             <tbody>
@@ -260,8 +260,8 @@ export default function AdminMenu() {
                     <td style={{ ...td, textAlign: 'center' }}><Toggle on={!!it.is_available} color={GREEN} onClick={() => toggleField(it, 'is_available')} /></td>
                     {hasSoldOut && <td style={{ ...td, textAlign: 'center' }}><Toggle on={!!it.is_sold_out} color={'#E8192C'} onClick={() => toggleField(it, 'is_sold_out')} /></td>}
                     <td style={{ ...td, textAlign: 'right' }}>
-                      <button onClick={() => { setEditItem(it); setShowForm(true) }} style={iconBtn} title="Düzenle"><EditIcon /></button>
-                      <button onClick={() => deleteItem(it.id)} style={{ ...iconBtn, color: RED }} title="Sil"><TrashIcon /></button>
+                      <button onClick={() => { setEditItem(it); setShowForm(true) }} style={iconBtn} title={t('edit')}><EditIcon /></button>
+                      <button onClick={() => deleteItem(it.id)} style={{ ...iconBtn, color: RED }} title={t('delete')}><TrashIcon /></button>
                     </td>
                   </tr>
                 )
@@ -274,11 +274,11 @@ export default function AdminMenu() {
       {/* Toplu işlem çubuğu */}
       {selectMode && selected.length > 0 && (
         <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: '#111', color: '#fff', borderRadius: 14, padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 8px 30px rgba(0,0,0,.25)', zIndex: 40 }}>
-          <span style={{ fontSize: 13, fontWeight: 600 }}>{selected.length} seçili</span>
+          <span style={{ fontSize: 13, fontWeight: 600 }}>{t('selected_count', { count: selected.length })}</span>
           <div style={{ width: 1, height: 20, background: '#444' }} />
-          <button onClick={() => bulkSetAvailable(true)} style={bulkBtn}>Aktif et</button>
-          <button onClick={() => bulkSetAvailable(false)} style={bulkBtn}>Pasif et</button>
-          <button onClick={bulkDelete} style={{ ...bulkBtn, color: '#ff7676' }}>Sil</button>
+          <button onClick={() => bulkSetAvailable(true)} style={bulkBtn}>{t('activate')}</button>
+          <button onClick={() => bulkSetAvailable(false)} style={bulkBtn}>{t('deactivate')}</button>
+          <button onClick={bulkDelete} style={{ ...bulkBtn, color: '#ff7676' }}>{t('delete')}</button>
         </div>
       )}
 
@@ -292,6 +292,7 @@ export default function AdminMenu() {
 
 /* ── Ürün formu ── */
 function ItemFormModal({ item, categories, allergens, outlets, dispName, onSave, onClose }) {
+  const { t } = useTranslation()
   const [form, setForm] = useState({
     name_ka: item?.name_ka || '', name_en: item?.name_en || '',
     name_tr: item?.name_tr || '', name_ru: item?.name_ru || '',
@@ -309,7 +310,7 @@ function ItemFormModal({ item, categories, allergens, outlets, dispName, onSave,
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 16px', zIndex: 50, overflowY: 'auto' }}>
       <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 560, background: '#fff', borderRadius: 18, boxShadow: '0 20px 60px rgba(0,0,0,.3)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 22px', borderBottom: `1px solid ${BORDER}` }}>
-          <h3 style={{ fontSize: 16, fontWeight: 800 }}>{item ? 'Ürünü Düzenle' : 'Yeni Ürün'}</h3>
+          <h3 style={{ fontSize: 16, fontWeight: 800 }}>{item ? t('edit_item_title') : t('new_item_title')}</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', fontSize: 20, lineHeight: 1 }}>✕</button>
         </div>
 
@@ -320,13 +321,13 @@ function ItemFormModal({ item, categories, allergens, outlets, dispName, onSave,
               {form.image_url ? <img src={form.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🍽️'}
             </div>
             <div style={{ flex: 1 }}>
-              <label style={fLabel}>Görsel URL</label>
+              <label style={fLabel}>{t('image_url_label')}</label>
               <input value={form.image_url} onChange={e => set('image_url', e.target.value)} style={fInput} placeholder="https://..." />
             </div>
           </div>
 
           <div>
-            <label style={fLabel}>İsim</label>
+            <label style={fLabel}>{t('item_name_label')}</label>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               {['tr', 'en', 'ka', 'ru'].map(l => (
                 <input key={l} value={form[`name_${l}`]} onChange={e => set(`name_${l}`, e.target.value)} style={fInput} placeholder={l.toUpperCase()} />
@@ -335,27 +336,27 @@ function ItemFormModal({ item, categories, allergens, outlets, dispName, onSave,
           </div>
 
           <div>
-            <label style={fLabel}>Açıklama (EN)</label>
+            <label style={fLabel}>{t('description_en_label')}</label>
             <textarea value={form.description_en} onChange={e => set('description_en', e.target.value)} rows={2} style={{ ...fInput, resize: 'vertical', fontFamily: 'inherit' }} />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: outlets.length ? '1fr 1fr 1fr' : '1fr 1fr', gap: 10 }}>
             <div>
-              <label style={fLabel}>Fiyat (₾)</label>
+              <label style={fLabel}>{t('price_gel_label')}</label>
               <input type="number" step="0.01" value={form.price} onChange={e => set('price', e.target.value)} style={fInput} />
             </div>
             <div>
-              <label style={fLabel}>Kategori</label>
+              <label style={fLabel}>{t('category_singular')}</label>
               <select value={form.category_id} onChange={e => set('category_id', e.target.value)} style={fInput}>
-                <option value="">— Seç —</option>
+                <option value="">{t('select_placeholder')}</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{dispName(c)}</option>)}
               </select>
             </div>
             {outlets.length > 0 && (
               <div>
-                <label style={fLabel}>Outlet</label>
+                <label style={fLabel}>{t('outlet_label')}</label>
                 <select value={form.outlet_id ?? ''} onChange={e => set('outlet_id', e.target.value)} style={fInput}>
-                  <option value="">— Tümü —</option>
+                  <option value="">{t('select_all_placeholder')}</option>
                   {outlets.map(o => <option key={o.id} value={o.id}>{o.name || dispName(o)}</option>)}
                 </select>
               </div>
@@ -364,14 +365,14 @@ function ItemFormModal({ item, categories, allergens, outlets, dispName, onSave,
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div>
-              <label style={fLabel}>Kalori (kcal)</label>
-              <input type="number" step="1" min="0" value={form.calories} onChange={e => set('calories', e.target.value)} style={fInput} placeholder="Opsiyonel" />
+              <label style={fLabel}>{t('calories_label')}</label>
+              <input type="number" step="1" min="0" value={form.calories} onChange={e => set('calories', e.target.value)} style={fInput} placeholder={t('optional_placeholder')} />
             </div>
           </div>
 
           {allergens.length > 0 ? (
             <div>
-              <label style={fLabel}>Alerjenler</label>
+              <label style={fLabel}>{t('nav_allergens')}</label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {allergens.map(a => {
                   const on = form.allergen_ids.includes(a.id)
@@ -385,19 +386,19 @@ function ItemFormModal({ item, categories, allergens, outlets, dispName, onSave,
               </div>
             </div>
           ) : (
-            <p style={{ fontSize: 12, color: '#bbb' }}>Alerjen tanımlamak için önce "Alerjenler" sayfasından ekle.</p>
+            <p style={{ fontSize: 12, color: '#bbb' }}>{t('no_allergens_hint')}</p>
           )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, background: '#fafafa', borderRadius: 12, padding: 14 }}>
-            <Check label="Mevcut (menüde göster)" checked={form.is_available} onChange={v => set('is_available', v)} />
-            <Check label="Öne çıkan ürün" checked={form.is_featured} onChange={v => set('is_featured', v)} />
-            <Check label="🍳 Mutfağa gider (içecekler için kapat)" checked={form.goes_to_kitchen} onChange={v => set('goes_to_kitchen', v)} />
+            <Check label={t('available_checkbox')} checked={form.is_available} onChange={v => set('is_available', v)} />
+            <Check label={t('featured_checkbox')} checked={form.is_featured} onChange={v => set('is_featured', v)} />
+            <Check label={t('goes_to_kitchen_checkbox')} checked={form.goes_to_kitchen} onChange={v => set('goes_to_kitchen', v)} />
           </div>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '16px 22px', borderTop: `1px solid ${BORDER}` }}>
-          <button onClick={onClose} style={{ padding: '10px 18px', background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: '#555' }}>İptal</button>
-          <button onClick={() => onSave(form)} style={{ padding: '10px 22px', background: GREEN, color: '#fff', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(29,158,117,.3)' }}>Kaydet</button>
+          <button onClick={onClose} style={{ padding: '10px 18px', background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: '#555' }}>{t('cancel')}</button>
+          <button onClick={() => onSave(form)} style={{ padding: '10px 22px', background: GREEN, color: '#fff', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(29,158,117,.3)' }}>{t('save')}</button>
         </div>
       </div>
     </div>
