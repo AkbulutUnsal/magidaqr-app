@@ -13,14 +13,19 @@ export default function SuperDashboard() {
   const [deletingId, setDeletingId] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null) // { id, name }
 
+  const [adminEmails, setAdminEmails] = useState({})
+
   useEffect(() => { loadTenants() }, [])
 
   async function loadTenants() {
-    const { data } = await supabase
-      .from('tenants')
-      .select('*, restaurants(id, name_en, name_ka, slug, ordering_enabled)')
-      .order('created_at', { ascending: false })
+    const [{ data }, { data: adminProfiles }] = await Promise.all([
+      supabase.from('tenants').select('*, restaurants(id, name_en, name_ka, slug, ordering_enabled)').order('created_at', { ascending: false }),
+      supabase.from('profiles').select('tenant_id, email').eq('role', 'admin'),
+    ])
     setTenants(data || [])
+    const emailMap = {}
+    ;(adminProfiles || []).forEach(p => { emailMap[p.tenant_id] = p.email })
+    setAdminEmails(emailMap)
     setLoading(false)
   }
 
@@ -422,14 +427,14 @@ export default function SuperDashboard() {
         <table style={{width:'100%',borderCollapse:'collapse'}}>
           <thead>
             <tr style={{borderBottom:'1px solid #f0f0ee'}}>
-              {['FİRMA','SLUG / URL','PAKET','DURUM','KAYIT',''].map(h=>(
+              {['FİRMA','SLUG / URL','GİRİŞ E-POSTA','PAKET','DURUM','KAYIT',''].map(h=>(
                 <th key={h} style={{padding:'12px 16px',textAlign:'left',fontSize:11,fontWeight:700,color:'#aaa',textTransform:'uppercase',letterSpacing:'0.06em',whiteSpace:'nowrap'}}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {tenants.length === 0 && (
-              <tr><td colSpan={6} style={{padding:32,textAlign:'center',color:'#bbb',fontSize:13}}>Henüz firma yok</td></tr>
+              <tr><td colSpan={7} style={{padding:32,textAlign:'center',color:'#bbb',fontSize:13}}>Henüz firma yok</td></tr>
             )}
             {tenants.map(t => {
               const rest = t.restaurants?.[0]
@@ -453,6 +458,11 @@ export default function SuperDashboard() {
                       <span style={{fontSize:12,color:'#1D9E75',fontFamily:'monospace',background:'#e8f5ee',padding:'3px 8px',borderRadius:6}}>
                         /{rest.slug}
                       </span>
+                    ) : <span style={{fontSize:12,color:'#bbb'}}>—</span>}
+                  </td>
+                  <td style={{padding:'14px 16px'}}>
+                    {adminEmails[t.id] ? (
+                      <span style={{fontSize:12,color:'#444',fontFamily:'monospace'}}>{adminEmails[t.id]}</span>
                     ) : <span style={{fontSize:12,color:'#bbb'}}>—</span>}
                   </td>
                   <td style={{padding:'14px 16px'}}>
