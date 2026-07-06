@@ -333,15 +333,14 @@ export default function SuperDashboard() {
           <div style={{background:'#fff',borderRadius:16,padding:28,width:'100%',maxWidth:480,boxShadow:'0 24px 64px rgba(0,0,0,.18)'}}>
             <h2 style={{fontSize:18,fontWeight:800,marginBottom:20}}>Yeni Firma Ekle</h2>
 
-            <div style={{marginBottom:14}}>
-              <label style={{fontSize:12,fontWeight:600,color:'#666',display:'block',marginBottom:4}}>Firma Adı *</label>
-              <input type="text" value={form.name} onChange={handleNameChange}
-                placeholder="Örn: Aurora Restaurant"
-                style={{width:'100%',padding:'9px 12px',border:'1.5px solid #e8e8e4',borderRadius:8,fontSize:13,outline:'none',fontFamily:'inherit',boxSizing:'border-box'}}
-                onFocus={e=>e.target.style.borderColor='#1D9E75'} onBlur={e=>e.target.style.borderColor='#e8e8e4'}/>
-            </div>
-
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:14}}>
+              <div>
+                <label style={{fontSize:12,fontWeight:600,color:'#666',display:'block',marginBottom:4}}>Firma Adı *</label>
+                <input type="text" value={form.name} onChange={handleNameChange}
+                  placeholder="Örn: Aurora Restaurant"
+                  style={{width:'100%',padding:'9px 12px',border:'1.5px solid #e8e8e4',borderRadius:8,fontSize:13,outline:'none',fontFamily:'inherit',boxSizing:'border-box'}}
+                  onFocus={e=>e.target.style.borderColor='#1D9E75'} onBlur={e=>e.target.style.borderColor='#e8e8e4'}/>
+              </div>
               <div>
                 <label style={{fontSize:12,fontWeight:600,color:'#666',display:'block',marginBottom:4}}>Slug (URL) *</label>
                 <input type="text" value={form.slug} onChange={e=>setForm(p=>({...p,slug:e.target.value}))}
@@ -350,6 +349,9 @@ export default function SuperDashboard() {
                   onFocus={e=>e.target.style.borderColor='#1D9E75'} onBlur={e=>e.target.style.borderColor='#e8e8e4'}/>
                 <p style={{fontSize:10,color:'#aaa',marginTop:4}}>/menu/{form.slug || '...'}</p>
               </div>
+            </div>
+
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:14}}>
               <div>
                 <label style={{fontSize:12,fontWeight:600,color:'#666',display:'block',marginBottom:4}}>E-posta</label>
                 <input type="email" value={form.email} onChange={e=>setForm(p=>({...p,email:e.target.value}))}
@@ -357,9 +359,6 @@ export default function SuperDashboard() {
                   style={{width:'100%',padding:'9px 12px',border:'1.5px solid #e8e8e4',borderRadius:8,fontSize:13,outline:'none',fontFamily:'inherit',boxSizing:'border-box'}}
                   onFocus={e=>e.target.style.borderColor='#1D9E75'} onBlur={e=>e.target.style.borderColor='#e8e8e4'}/>
               </div>
-            </div>
-
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:14}}>
               <div>
                 <label style={{fontSize:12,fontWeight:600,color:'#666',display:'block',marginBottom:4}}>Telefon (WhatsApp) *</label>
                 <input type="tel" value={form.phone} onChange={e=>setForm(p=>({...p,phone:e.target.value}))}
@@ -368,17 +367,18 @@ export default function SuperDashboard() {
                   onFocus={e=>e.target.style.borderColor='#1D9E75'} onBlur={e=>e.target.style.borderColor='#e8e8e4'}/>
                 <p style={{fontSize:10,color:'#aaa',marginTop:4}}>WhatsApp'a da gönderilecek</p>
               </div>
-              <div>
-                <label style={{fontSize:12,fontWeight:600,color:'#666',display:'block',marginBottom:4}}>Paket</label>
-                <select value={form.plan} onChange={e=>setForm(p=>({...p,plan:e.target.value}))}
-                  style={{width:'100%',padding:'9px 12px',border:'1.5px solid #e8e8e4',borderRadius:8,fontSize:13,outline:'none',fontFamily:'inherit',background:'#fff',boxSizing:'border-box'}}>
-                  <option value="basic">{PLANS.basic.name} — {PLANS.basic.price}{PLANS.basic.currency}</option>
-                  <option value="advanced">{PLANS.advanced.name} — {PLANS.advanced.price}{PLANS.advanced.currency}</option>
-                </select>
-                <p style={{fontSize:10,color:'#aaa',marginTop:4}}>
-                  {form.plan==='basic' ? PLANS.basic.tagline : PLANS.advanced.tagline}
-                </p>
-              </div>
+            </div>
+
+            <div style={{marginBottom:14}}>
+              <label style={{fontSize:12,fontWeight:600,color:'#666',display:'block',marginBottom:4}}>Paket</label>
+              <select value={form.plan} onChange={e=>setForm(p=>({...p,plan:e.target.value}))}
+                style={{width:'100%',padding:'9px 12px',border:'1.5px solid #e8e8e4',borderRadius:8,fontSize:13,outline:'none',fontFamily:'inherit',background:'#fff',boxSizing:'border-box'}}>
+                <option value="basic">{PLANS.basic.name} — {PLANS.basic.price}{PLANS.basic.currency}</option>
+                <option value="advanced">{PLANS.advanced.name} — {PLANS.advanced.price}{PLANS.advanced.currency}</option>
+              </select>
+              <p style={{fontSize:10,color:'#aaa',marginTop:4}}>
+                {form.plan==='basic' ? PLANS.basic.tagline : PLANS.advanced.tagline}
+              </p>
             </div>
 
             <div style={{marginBottom:16,padding:'12px 14px',background:form.ai_addon?'#f5f3ff':'#f9f9f7',borderRadius:10,border:`1px solid ${form.ai_addon?'#ddd6fe':'#eee'}`}}>
