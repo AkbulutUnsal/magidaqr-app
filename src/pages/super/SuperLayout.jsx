@@ -11,7 +11,7 @@ export default function SuperLayout() {
 
       <aside style={{width:220,background:'#fff',borderRight:'1px solid #e8e8e4',display:'flex',flexDirection:'column'}}>
         <div style={{padding:'16px',borderBottom:'1px solid #f0f0ee'}}>
-          <span style={{fontSize:17,fontWeight:900}}>magida<span style={{color:'#1D9E75'}}>QR</span></span>
+          <span style={{fontSize:17,fontWeight:900}}><span style={{color:'#1D9E75'}}>magida</span><span style={{color:'#E8192C'}}>QR</span></span>
           <div style={{marginTop:4,display:'inline-flex',alignItems:'center',gap:4,background:'#fef3c7',color:'#92400e',fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:20}}>
             ⚡ SUPER ADMIN
           </div>
