@@ -62,10 +62,17 @@ export default function AdminSettings() {
     setSaving(true); setMsg('')
     const payload = {}
     desiredKeys.forEach(k => { if (k in restaurant && form[k] !== undefined) payload[k] = form[k] })
-    const { error } = await supabase.from('restaurants').update(payload).eq('id', profile.restaurant_id)
+    const { data, error } = await supabase.from('restaurants').update(payload).eq('id', profile.restaurant_id).select()
     setSaving(false)
-    setMsg(error ? '❌ ' + error.message : '✅ Kaydedildi!')
-    setTimeout(() => setMsg(''), 3000)
+    if (error) {
+      setMsg('❌ ' + error.message)
+    } else if (!data || data.length === 0) {
+      setMsg('❌ Kaydedilemedi — bu restorana yazma izniniz yok gibi görünüyor (RLS kısıtlaması olabilir).')
+    } else {
+      setRestaurant(data[0])
+      setMsg('✅ Kaydedildi!')
+    }
+    setTimeout(() => setMsg(''), 4000)
   }
 
   // ⌘S / Ctrl+S
