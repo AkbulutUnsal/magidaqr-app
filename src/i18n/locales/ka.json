@@ -64,5 +64,34 @@
   "no_orders": "შეკვეთები არ არის",
   "order_number": "შეკვეთა #",
   "minutes_ago": "წუთი წინ",
-  "just_now": "ახლახანს"
+  "just_now": "ახლახანს",
+
+  "nav_analytics": "ანალიტიკა",
+  "nav_kitchen": "სამზარეულო",
+  "nav_waiter": "მიმტანი",
+  "nav_qr_studio": "QR სტუდია",
+  "nav_ai_assistant": "AI ასისტენტი",
+  "nav_hero_cards": "მთავარი გვერდის ბარათები",
+  "nav_sections": "სექციები",
+  "nav_bulk_price": "მასობრივი ფასი",
+  "nav_import_export": "შემოტანა / გატანა",
+  "nav_outlets": "აუთლეთები",
+  "nav_delivery": "მიწოდება",
+  "nav_languages": "ენები და თარგმანები",
+  "nav_allergens": "ალერგენები",
+  "nav_media": "მედია",
+  "nav_social": "სოციალური მედია",
+  "nav_info_pages": "საინფორმაციო გვერდები",
+  "nav_campaigns": "აქციები",
+  "nav_survey": "გამოკითხვა",
+  "nav_company_management": "კომპანიის მართვა",
+
+  "section_menu_content": "მენიუს კონტენტი",
+  "section_configuration": "კონფიგურაცია",
+  "section_marketing": "მარკეტინგი",
+  "section_management": "მართვა",
+  "section_super_admin": "სუპერ ადმინი",
+
+  "quick_search": "სწრაფი ძიება...",
+  "view_menu": "მენიუს ნახვა"
 }

@@ -64,5 +64,34 @@
   "no_orders": "No orders",
   "order_number": "Order #",
   "minutes_ago": "min ago",
-  "just_now": "Just now"
+  "just_now": "Just now",
+
+  "nav_analytics": "Analytics",
+  "nav_kitchen": "Kitchen",
+  "nav_waiter": "Waiter",
+  "nav_qr_studio": "QR Studio",
+  "nav_ai_assistant": "AI Assistant",
+  "nav_hero_cards": "Homepage Cards",
+  "nav_sections": "Sections",
+  "nav_bulk_price": "Bulk Price",
+  "nav_import_export": "Import / Export",
+  "nav_outlets": "Outlets",
+  "nav_delivery": "Delivery",
+  "nav_languages": "Languages & Translations",
+  "nav_allergens": "Allergens",
+  "nav_media": "Media",
+  "nav_social": "Social Media",
+  "nav_info_pages": "Info Pages",
+  "nav_campaigns": "Campaigns",
+  "nav_survey": "Survey",
+  "nav_company_management": "Company Management",
+
+  "section_menu_content": "MENU CONTENT",
+  "section_configuration": "CONFIGURATION",
+  "section_marketing": "MARKETING",
+  "section_management": "MANAGEMENT",
+  "section_super_admin": "SUPER ADMIN",
+
+  "quick_search": "Quick search...",
+  "view_menu": "View Menu"
 }

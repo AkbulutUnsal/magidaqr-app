@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../hooks/useAuth'
 import AdminFooter from '../../components/AdminFooter'
 
@@ -34,47 +35,48 @@ const BellIcon    = ()=><svg width={16} height={16} viewBox="0 0 24 24" fill="no
 
 // ── Nav structure ──
 const NAV = [
-  { section: null, items: [
-    { to:'/admin',             label:'Dashboard',       Icon:HomeIcon,     end:true },
-    { to:'/admin/analytics',   label:'Analitik',        Icon:ChartIcon },
-    { to:'/admin/orders',      label:'Siparişler',      Icon:ReceiptIcon, dot:true },
-    { to:'/admin/mutfak',      label:'Mutfak',          Icon:ChefIcon, dot:true },
-    { to:'/admin/garson',      label:'Garson',          Icon:BellIcon, dot:true },
-    { to:'/admin/qr',          label:'QR Stüdyo',       Icon:QrIcon },
-    { to:'/admin/ai',          label:'AI Asistan',      Icon:AIIcon, dot:true },
+  { sectionKey: null, items: [
+    { to:'/admin',             labelKey:'dashboard',         Icon:HomeIcon,     end:true },
+    { to:'/admin/analytics',   labelKey:'nav_analytics',     Icon:ChartIcon },
+    { to:'/admin/orders',      labelKey:'orders',            Icon:ReceiptIcon, dot:true },
+    { to:'/admin/mutfak',      labelKey:'nav_kitchen',       Icon:ChefIcon, dot:true },
+    { to:'/admin/garson',      labelKey:'nav_waiter',        Icon:BellIcon, dot:true },
+    { to:'/admin/qr',          labelKey:'nav_qr_studio',     Icon:QrIcon },
+    { to:'/admin/ai',          labelKey:'nav_ai_assistant',  Icon:AIIcon, dot:true },
   ]},
-  { section:'MENÜ İÇERİK', items: [
-    { to:'/admin/hero-cards',  label:'Ana Sayfa Kartları', Icon:CardIcon },
-    { to:'/admin/sections',    label:'Bölümler',         Icon:GridIcon },
-    { to:'/admin/categories',  label:'Kategoriler',      Icon:FolderIcon },
-    { to:'/admin/menu',        label:'Ürünler',          Icon:DishIcon },
-    { to:'/admin/bulk-price',  label:'Toplu Fiyat',      Icon:TagIcon },
-    { to:'/admin/import',      label:'Import / Export',  Icon:UploadIcon },
+  { sectionKey:'section_menu_content', items: [
+    { to:'/admin/hero-cards',  labelKey:'nav_hero_cards',    Icon:CardIcon },
+    { to:'/admin/sections',    labelKey:'nav_sections',      Icon:GridIcon },
+    { to:'/admin/categories',  labelKey:'categories',        Icon:FolderIcon },
+    { to:'/admin/menu',        labelKey:'items',             Icon:DishIcon },
+    { to:'/admin/bulk-price',  labelKey:'nav_bulk_price',    Icon:TagIcon },
+    { to:'/admin/import',      labelKey:'nav_import_export', Icon:UploadIcon },
   ]},
-  { section:'YAPILANDIRMA', items: [
-    { to:'/admin/outlets',     label:'Outletler',        Icon:MapPinIcon },
-    { to:'/admin/delivery',    label:'Paket Servisi',    Icon:PackageIcon },
-    { to:'/admin/languages',   label:'Diller & Çeviriler',Icon:GlobeIcon },
-    { to:'/admin/allergens',   label:'Alerjenler',       Icon:AlertIcon },
+  { sectionKey:'section_configuration', items: [
+    { to:'/admin/outlets',     labelKey:'nav_outlets',       Icon:MapPinIcon },
+    { to:'/admin/delivery',    labelKey:'nav_delivery',      Icon:PackageIcon },
+    { to:'/admin/languages',   labelKey:'nav_languages',     Icon:GlobeIcon },
+    { to:'/admin/allergens',   labelKey:'nav_allergens',     Icon:AlertIcon },
   ]},
-  { section:'PAZARLAMA', items: [
-    { to:'/admin/media',       label:'Medya',            Icon:ImageIcon },
-    { to:'/admin/social',      label:'Sosyal Medya',     Icon:ShareIcon },
-    { to:'/admin/info-pages',  label:'Bilgi Sayfaları',  Icon:InfoIcon },
-    { to:'/admin/campaigns',   label:'Kampanyalar',      Icon:MegaphoneIcon },
-    { to:'/admin/survey',      label:'Anket',            Icon:ClipboardIcon },
+  { sectionKey:'section_marketing', items: [
+    { to:'/admin/media',       labelKey:'nav_media',         Icon:ImageIcon },
+    { to:'/admin/social',      labelKey:'nav_social',        Icon:ShareIcon },
+    { to:'/admin/info-pages',  labelKey:'nav_info_pages',    Icon:InfoIcon },
+    { to:'/admin/campaigns',   labelKey:'nav_campaigns',     Icon:MegaphoneIcon },
+    { to:'/admin/survey',      labelKey:'nav_survey',        Icon:ClipboardIcon },
   ]},
-  { section:'YÖNETİM', items: [
-    { to:'/admin/tables',      label:'Masalar',          Icon:TableIcon },
-    { to:'/admin/staff',       label:'Personel',         Icon:UsersIcon },
-    { to:'/admin/reports',     label:'Raporlar',         Icon:ReportIcon },
-    { to:'/admin/settings',    label:'Ayarlar',          Icon:CogIcon },
+  { sectionKey:'section_management', items: [
+    { to:'/admin/tables',      labelKey:'tables',            Icon:TableIcon },
+    { to:'/admin/staff',       labelKey:'staff',             Icon:UsersIcon },
+    { to:'/admin/reports',     labelKey:'reports',           Icon:ReportIcon },
+    { to:'/admin/settings',    labelKey:'settings',          Icon:CogIcon },
   ]},
 ]
 
 export default function AdminLayout() {
   const { profile, signOut } = useAuth()
   const navigate = useNavigate()
+  const { t, i18n } = useTranslation()
   const [mini, setMini] = useState(false)
 
   const out = async () => { await signOut(); navigate('/login') }
@@ -104,18 +106,18 @@ export default function AdminLayout() {
         <nav style={{flex:1,overflowY:'auto',padding:'8px 6px'}}>
           {NAV.map((g,gi)=>(
             <div key={gi} style={{marginBottom:14}}>
-              {g.section && !mini && (
+              {g.sectionKey && !mini && (
                 <p style={{fontSize:10,fontWeight:700,color:'#bbb',letterSpacing:'0.07em',textTransform:'uppercase',padding:'0 6px',marginBottom:3}}>
-                  {g.section}
+                  {t(g.sectionKey)}
                 </p>
               )}
               {g.items.map(item=>(
                 <NavLink key={item.to} to={item.to} end={item.end}
-                  title={mini ? item.label : undefined}
+                  title={mini ? t(item.labelKey) : undefined}
                   className={({isActive})=>`nl${isActive?' on':''}`}
                   style={{justifyContent:mini?'center':'flex-start'}}>
                   <item.Icon />
-                  {!mini && <span style={{flex:1}}>{item.label}</span>}
+                  {!mini && <span style={{flex:1}}>{t(item.labelKey)}</span>}
                   {!mini && item.dot && <span style={{width:7,height:7,borderRadius:'50%',background:'#1D9E75',flexShrink:0}}/>}
                 </NavLink>
               ))}
@@ -124,12 +126,12 @@ export default function AdminLayout() {
 
           {isSA && (
             <div style={{marginBottom:14}}>
-              {!mini && <p style={{fontSize:10,fontWeight:700,color:'#bbb',letterSpacing:'0.07em',textTransform:'uppercase',padding:'0 6px',marginBottom:3}}>SUPER ADMIN</p>}
-              <NavLink to="/super" title={mini?'Firmalar':undefined}
+              {!mini && <p style={{fontSize:10,fontWeight:700,color:'#bbb',letterSpacing:'0.07em',textTransform:'uppercase',padding:'0 6px',marginBottom:3}}>{t('section_super_admin')}</p>}
+              <NavLink to="/super" title={mini?t('nav_company_management'):undefined}
                 className={({isActive})=>`nl${isActive?' on':''}`}
                 style={{justifyContent:mini?'center':'flex-start'}}>
                 <ShieldIcon />
-                {!mini && 'Firma Yönetimi'}
+                {!mini && t('nav_company_management')}
               </NavLink>
             </div>
           )}
@@ -146,7 +148,7 @@ export default function AdminLayout() {
                 <p style={{fontSize:11,fontWeight:600,color:'#111',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{profile?.full_name||'Admin'}</p>
                 <p style={{fontSize:9,color:'#aaa'}}>{profile?.role}</p>
               </div>
-              <button onClick={out} title="Çıkış" style={{background:'none',border:'none',cursor:'pointer',color:'#ccc',padding:2,flexShrink:0}}>
+              <button onClick={out} title={t('logout')} style={{background:'none',border:'none',cursor:'pointer',color:'#ccc',padding:2,flexShrink:0}}>
                 <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
                 </svg>
@@ -162,14 +164,17 @@ export default function AdminLayout() {
         <header style={{background:'#fff',borderBottom:'1px solid #e8e8e4',padding:'0 24px',height:52,display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
           <div style={{background:'#f5f5f3',border:'1px solid #e8e8e4',borderRadius:8,padding:'6px 14px',display:'flex',alignItems:'center',gap:8,width:200,cursor:'text'}}>
             <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <span style={{fontSize:12,color:'#bbb'}}>Hızlı ara...</span>
+            <span style={{fontSize:12,color:'#bbb'}}>{t('quick_search')}</span>
             <span style={{marginLeft:'auto',fontSize:9,color:'#ccc',background:'#eee',padding:'1px 4px',borderRadius:4}}>⌘K</span>
           </div>
-          <a href="/menu/main/c4efa2ba-fc1c-43e5-980b-b57257b27147" target="_blank"
-            style={{display:'flex',alignItems:'center',gap:6,padding:'6px 14px',background:'#1D9E75',color:'#fff',borderRadius:8,fontSize:12,fontWeight:600,textDecoration:'none'}}>
-            <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            Menüyü Gör
-          </a>
+          <div style={{display:'flex',alignItems:'center',gap:10}}>
+            <AdminLangSwitcher i18n={i18n} />
+            <a href="/menu/main/c4efa2ba-fc1c-43e5-980b-b57257b27147" target="_blank"
+              style={{display:'flex',alignItems:'center',gap:6,padding:'6px 14px',background:'#1D9E75',color:'#fff',borderRadius:8,fontSize:12,fontWeight:600,textDecoration:'none'}}>
+              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              {t('view_menu')}
+            </a>
+          </div>
         </header>
         <main style={{flex:1,overflowY:'auto',padding:'20px',display:'flex',flexDirection:'column'}}>
           <div style={{flex:1}}>
@@ -178,6 +183,47 @@ export default function AdminLayout() {
           <AdminFooter />
         </main>
       </div>
+    </div>
+  )
+}
+
+// ── Admin dil switcher ──
+function AdminLangSwitcher({ i18n }) {
+  const [open, setOpen] = useState(false)
+  const LANGS = [
+    { code:'tr', img:'https://flagcdn.com/w40/tr.png', label:'Türkçe' },
+    { code:'en', img:'https://flagcdn.com/w40/gb.png', label:'English' },
+    { code:'ka', img:'https://flagcdn.com/w40/ge.png', label:'ქართული' },
+    { code:'ru', img:'https://flagcdn.com/w40/ru.png', label:'Русский' },
+  ]
+  const cur = LANGS.find(l => l.code === i18n.language) || LANGS[0]
+
+  return (
+    <div style={{ position:'relative' }}>
+      <button onClick={() => setOpen(o => !o)}
+        style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 10px', background:'#f5f5f3',
+          border:'1px solid #e8e8e4', borderRadius:8, cursor:'pointer' }}>
+        <img src={cur.img} alt={cur.code} style={{ width:18, height:13, objectFit:'cover', borderRadius:2 }} />
+        <span style={{ fontSize:12, fontWeight:600, color:'#444' }}>{cur.code.toUpperCase()}</span>
+        <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position:'fixed', inset:0, zIndex:90 }} />
+          <div style={{ position:'absolute', right:0, top:36, background:'#fff', border:'1px solid #e8e8e4',
+            borderRadius:10, boxShadow:'0 8px 28px rgba(0,0,0,.12)', overflow:'hidden', zIndex:91, minWidth:145 }}>
+            {LANGS.map(({ code, img, label }) => (
+              <button key={code} onClick={() => { i18n.changeLanguage(code); setOpen(false) }}
+                style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'9px 12px',
+                  border:'none', cursor:'pointer', background: i18n.language===code ? '#e8f5ee' : '#fff' }}>
+                <img src={img} alt={code} style={{ width:18, height:13, objectFit:'cover', borderRadius:2 }} />
+                <span style={{ fontSize:12.5, fontWeight: i18n.language===code?700:500,
+                  color: i18n.language===code?'#1D9E75':'#333' }}>{label}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }

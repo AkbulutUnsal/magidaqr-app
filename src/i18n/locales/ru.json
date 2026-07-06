@@ -64,5 +64,34 @@
   "no_orders": "Нет заказов",
   "order_number": "Заказ #",
   "minutes_ago": "мин назад",
-  "just_now": "Только что"
+  "just_now": "Только что",
+
+  "nav_analytics": "Аналитика",
+  "nav_kitchen": "Кухня",
+  "nav_waiter": "Официант",
+  "nav_qr_studio": "QR-студия",
+  "nav_ai_assistant": "AI-помощник",
+  "nav_hero_cards": "Карточки главной страницы",
+  "nav_sections": "Разделы",
+  "nav_bulk_price": "Массовое изменение цен",
+  "nav_import_export": "Импорт / Экспорт",
+  "nav_outlets": "Точки продаж",
+  "nav_delivery": "Доставка",
+  "nav_languages": "Языки и переводы",
+  "nav_allergens": "Аллергены",
+  "nav_media": "Медиа",
+  "nav_social": "Социальные сети",
+  "nav_info_pages": "Информационные страницы",
+  "nav_campaigns": "Акции",
+  "nav_survey": "Опрос",
+  "nav_company_management": "Управление компаниями",
+
+  "section_menu_content": "СОДЕРЖИМОЕ МЕНЮ",
+  "section_configuration": "НАСТРОЙКА",
+  "section_marketing": "МАРКЕТИНГ",
+  "section_management": "УПРАВЛЕНИЕ",
+  "section_super_admin": "СУПЕР АДМИН",
+
+  "quick_search": "Быстрый поиск...",
+  "view_menu": "Посмотреть меню"
 }

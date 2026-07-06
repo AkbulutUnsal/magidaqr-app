@@ -64,5 +64,34 @@
   "no_orders": "Sipariş yok",
   "order_number": "Sipariş #",
   "minutes_ago": "dk önce",
-  "just_now": "Az önce"
+  "just_now": "Az önce",
+
+  "nav_analytics": "Analitik",
+  "nav_kitchen": "Mutfak",
+  "nav_waiter": "Garson",
+  "nav_qr_studio": "QR Stüdyo",
+  "nav_ai_assistant": "AI Asistan",
+  "nav_hero_cards": "Ana Sayfa Kartları",
+  "nav_sections": "Bölümler",
+  "nav_bulk_price": "Toplu Fiyat",
+  "nav_import_export": "Import / Export",
+  "nav_outlets": "Outletler",
+  "nav_delivery": "Paket Servisi",
+  "nav_languages": "Diller & Çeviriler",
+  "nav_allergens": "Alerjenler",
+  "nav_media": "Medya",
+  "nav_social": "Sosyal Medya",
+  "nav_info_pages": "Bilgi Sayfaları",
+  "nav_campaigns": "Kampanyalar",
+  "nav_survey": "Anket",
+  "nav_company_management": "Firma Yönetimi",
+
+  "section_menu_content": "MENÜ İÇERİK",
+  "section_configuration": "YAPILANDIRMA",
+  "section_marketing": "PAZARLAMA",
+  "section_management": "YÖNETİM",
+  "section_super_admin": "SUPER ADMIN",
+
+  "quick_search": "Hızlı ara...",
+  "view_menu": "Menüyü Gör"
 }
