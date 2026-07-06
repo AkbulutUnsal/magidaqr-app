@@ -12,10 +12,13 @@ export default function AdminDashboard() {
   const [restaurant, setRestaurant] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => { load() }, [])
+  const [previewTable, setPreviewTable] = useState(null)
+  const [previewItems, setPreviewItems] = useState([])
+
+  useEffect(() => { if (profile?.restaurant_id) load() }, [profile?.restaurant_id])
 
   async function load() {
-    const { data: rest } = await supabase.from('restaurants').select('*').limit(1).single()
+    const { data: rest } = await supabase.from('restaurants').select('*').eq('id', profile.restaurant_id).single()
     setRestaurant(rest)
     if (!rest) return setLoading(false)
     const rid = rest.id
@@ -48,9 +51,10 @@ export default function AdminDashboard() {
     }
     setChartData(days)
 
-    // Top items
+    // Top items — restaurant_id ile filtreli (menu_items üzerinden inner join)
     const {data:ois}=await supabase.from('order_items')
-      .select('menu_item_id,quantity,menu_items(name_tr,name_en,name_ka,image_url)').limit(200)
+      .select('menu_item_id,quantity,menu_items!inner(name_tr,name_en,name_ka,image_url,restaurant_id)')
+      .eq('menu_items.restaurant_id',rid).limit(200)
     if (ois) {
       const counts={}
       ois.forEach(oi=>{
@@ -68,6 +72,14 @@ export default function AdminDashboard() {
       .select('*,tables(table_number)').eq('restaurant_id',rid)
       .order('created_at',{ascending:false}).limit(6)
     setRecentOrders(orders||[])
+
+    // Canlı önizleme için: gerçek bir masa + ilk 2 ürün
+    const [{ data: tbl }, { data: prevItems }] = await Promise.all([
+      supabase.from('tables').select('id,table_number').eq('restaurant_id',rid).order('table_number').limit(1),
+      supabase.from('menu_items').select('name_tr,name_en,name_ka,price').eq('restaurant_id',rid).eq('is_available',true).order('sort_order').limit(2),
+    ])
+    setPreviewTable(tbl?.[0] || null)
+    setPreviewItems(prevItems || [])
     setLoading(false)
   }
 
@@ -252,8 +264,12 @@ export default function AdminDashboard() {
         <div style={{background:'#fff',border:'1px solid #e8e8e4',borderRadius:12,padding:'16px'}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
             <h3 style={{fontSize:13,fontWeight:700}}>Menü Önizleme</h3>
-            <a href={`/menu/${restSlug}/c4efa2ba-fc1c-43e5-980b-b57257b27147`} target="_blank"
-              style={{fontSize:11,color:'#1D9E75',fontWeight:600,textDecoration:'none'}}>Yeni sekmede ↗</a>
+            {previewTable ? (
+              <a href={`/menu/${restSlug}/${previewTable.id}`} target="_blank"
+                style={{fontSize:11,color:'#1D9E75',fontWeight:600,textDecoration:'none'}}>Yeni sekmede ↗</a>
+            ) : (
+              <span style={{fontSize:11,color:'#ccc'}} title="Önce bir masa ekleyin">Yeni sekmede ↗</span>
+            )}
           </div>
           {/* Mini phone */}
           <div style={{width:'100%',maxWidth:200,margin:'0 auto',background:'#1a1a1a',borderRadius:24,padding:6,boxShadow:'0 8px 32px rgba(0,0,0,.2)'}}>
@@ -265,17 +281,21 @@ export default function AdminDashboard() {
                 }
                 <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,transparent,rgba(0,0,0,.5))'}}/>
                 <div style={{position:'absolute',bottom:6,left:8,color:'#fff',fontSize:9,fontWeight:700}}>{restName}</div>
-                <div style={{position:'absolute',bottom:6,right:8,background:'rgba(255,255,255,.15)',borderRadius:10,padding:'2px 6px',color:'#fff',fontSize:8,fontWeight:700}}>Masa 1</div>
+                <div style={{position:'absolute',bottom:6,right:8,background:'rgba(255,255,255,.15)',borderRadius:10,padding:'2px 6px',color:'#fff',fontSize:8,fontWeight:700}}>
+                  {previewTable ? `Masa ${previewTable.table_number}` : 'Masa —'}
+                </div>
               </div>
               <div style={{padding:8}}>
                 <div style={{display:'flex',gap:4,marginBottom:6}}>
                   <span style={{fontSize:8,background:'#1D9E75',color:'#fff',padding:'2px 7px',borderRadius:20,fontWeight:700}}>Tümü</span>
                   <span style={{fontSize:8,background:'#f4f4f2',color:'#666',padding:'2px 7px',borderRadius:20,fontWeight:600}}>Ana yemek</span>
                 </div>
-                {[{n:'Mtsvadi',p:'18 ₾'},{n:'Khachapuri',p:'14 ₾'}].map((item,i)=>(
+                {previewItems.length === 0 ? (
+                  <p style={{fontSize:9,color:'#ccc',textAlign:'center',padding:'8px 0'}}>Henüz ürün yok</p>
+                ) : previewItems.map((item,i)=>(
                   <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'4px 0',borderBottom:'1px solid #f4f4f2'}}>
-                    <span style={{fontSize:9,fontWeight:600}}>{item.n}</span>
-                    <span style={{fontSize:9,fontWeight:800,color:'#1D9E75'}}>{item.p}</span>
+                    <span style={{fontSize:9,fontWeight:600}}>{item.name_tr||item.name_en||item.name_ka||'—'}</span>
+                    <span style={{fontSize:9,fontWeight:800,color:'#1D9E75'}}>{item.price} ₾</span>
                   </div>
                 ))}
               </div>

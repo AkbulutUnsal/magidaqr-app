@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../hooks/useAuth'
+import { supabase } from '../../lib/supabase'
 import AdminFooter from '../../components/AdminFooter'
 
 // ── Icons ──
@@ -78,6 +79,21 @@ export default function AdminLayout() {
   const navigate = useNavigate()
   const { t, i18n } = useTranslation()
   const [mini, setMini] = useState(false)
+  const [menuUrl, setMenuUrl] = useState(null)
+
+  useEffect(() => {
+    if (!profile?.restaurant_id) return
+    let active = true
+    ;(async () => {
+      const [{ data: rest }, { data: tbl }] = await Promise.all([
+        supabase.from('restaurants').select('slug').eq('id', profile.restaurant_id).single(),
+        supabase.from('tables').select('id').eq('restaurant_id', profile.restaurant_id).order('table_number').limit(1),
+      ])
+      if (!active) return
+      if (rest?.slug && tbl?.[0]?.id) setMenuUrl(`/menu/${rest.slug}/${tbl[0].id}`)
+    })()
+    return () => { active = false }
+  }, [profile?.restaurant_id])
 
   const out = async () => { await signOut(); navigate('/login') }
   const isSA = profile?.role === 'super_admin'
@@ -169,11 +185,19 @@ export default function AdminLayout() {
           </div>
           <div style={{display:'flex',alignItems:'center',gap:10}}>
             <AdminLangSwitcher i18n={i18n} />
-            <a href="/menu/main/c4efa2ba-fc1c-43e5-980b-b57257b27147" target="_blank"
-              style={{display:'flex',alignItems:'center',gap:6,padding:'6px 14px',background:'#1D9E75',color:'#fff',borderRadius:8,fontSize:12,fontWeight:600,textDecoration:'none'}}>
-              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              {t('view_menu')}
-            </a>
+            {menuUrl ? (
+              <a href={menuUrl} target="_blank"
+                style={{display:'flex',alignItems:'center',gap:6,padding:'6px 14px',background:'#1D9E75',color:'#fff',borderRadius:8,fontSize:12,fontWeight:600,textDecoration:'none'}}>
+                <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                {t('view_menu')}
+              </a>
+            ) : (
+              <span title={profile?.role === 'super_admin' ? undefined : 'Önce bir masa ekleyin'}
+                style={{display:'flex',alignItems:'center',gap:6,padding:'6px 14px',background:'#e8e8e4',color:'#aaa',borderRadius:8,fontSize:12,fontWeight:600}}>
+                <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                {t('view_menu')}
+              </span>
+            )}
           </div>
         </header>
         <main style={{flex:1,overflowY:'auto',padding:'20px',display:'flex',flexDirection:'column'}}>
