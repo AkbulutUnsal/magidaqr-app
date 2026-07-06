@@ -104,6 +104,7 @@ export default function AdminMenu() {
       ...form,
       restaurant_id: profile.restaurant_id,
       price: form.price === '' ? null : Number(form.price),
+      calories: form.calories === '' ? null : Number(form.calories),
       category_id: form.category_id || null,
     }
     if (editItem?.id) await supabase.from('menu_items').update(payload).eq('id', editItem.id)
@@ -295,7 +296,7 @@ function ItemFormModal({ item, categories, allergens, outlets, dispName, onSave,
     name_ka: item?.name_ka || '', name_en: item?.name_en || '',
     name_tr: item?.name_tr || '', name_ru: item?.name_ru || '',
     description_en: item?.description_en || '',
-    price: item?.price ?? '', category_id: item?.category_id || '',
+    price: item?.price ?? '', calories: item?.calories ?? '', category_id: item?.category_id || '',
     image_url: item?.image_url || '', is_available: item?.is_available ?? true,
     is_featured: item?.is_featured ?? false, goes_to_kitchen: item?.goes_to_kitchen ?? true,
     allergen_ids: item?.allergen_ids || [],
@@ -359,6 +360,13 @@ function ItemFormModal({ item, categories, allergens, outlets, dispName, onSave,
                 </select>
               </div>
             )}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div>
+              <label style={fLabel}>Kalori (kcal)</label>
+              <input type="number" step="1" min="0" value={form.calories} onChange={e => set('calories', e.target.value)} style={fInput} placeholder="Opsiyonel" />
+            </div>
           </div>
 
           {allergens.length > 0 ? (

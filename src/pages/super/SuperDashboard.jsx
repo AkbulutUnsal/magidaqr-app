@@ -18,7 +18,7 @@ export default function SuperDashboard() {
   async function loadTenants() {
     const { data } = await supabase
       .from('tenants')
-      .select('*, restaurants(id, name_en, name_ka, slug)')
+      .select('*, restaurants(id, name_en, name_ka, slug, ordering_enabled)')
       .order('created_at', { ascending: false })
     setTenants(data || [])
     setLoading(false)
@@ -428,6 +428,22 @@ export default function SuperDashboard() {
                         title={t.ai_addon?'AI eklentisini kapat':'AI eklentisini aç'}>
                         ✨ AI {t.ai_addon?'✓':''}
                       </button>
+                      {rest && (() => {
+                        const ordOn = rest.ordering_enabled ?? true
+                        return (
+                          <button onClick={async()=>{
+                              await supabase.from('restaurants').update({ ordering_enabled: !ordOn }).eq('id', rest.id)
+                              loadTenants()
+                            }}
+                            style={{fontSize:11,fontWeight:600,color:ordOn?'#1D9E75':'#aaa',
+                              background:ordOn?'#e8f5ee':'#f9f9f7',
+                              border:`1px solid ${ordOn?'#bbf7d0':'#eee'}`,
+                              padding:'5px 10px',borderRadius:8,cursor:'pointer',whiteSpace:'nowrap'}}
+                            title={ordOn?'Sipariş modülünü kapat (sadece vitrin menü)':'Sipariş modülünü aç'}>
+                            🛒 Sipariş {ordOn?'✓':''}
+                          </button>
+                        )
+                      })()}
                       <button onClick={async()=>{
                           const base = t.plan_expires_at && new Date(t.plan_expires_at) > new Date()
                             ? new Date(t.plan_expires_at) : new Date()

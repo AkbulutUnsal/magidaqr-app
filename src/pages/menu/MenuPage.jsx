@@ -92,6 +92,7 @@ export default function MenuPage() {
   const featuredItems = useMemo(() => items.filter(i => i.is_featured && i.is_available && !i.is_sold_out), [items])
 
   const addToCart = (item) => {
+    if (restaurant?.ordering_enabled === false) return
     if (item.is_sold_out) return
     setCart(prev => {
       const ex = prev.find(c => c.id === item.id)
@@ -164,6 +165,7 @@ export default function MenuPage() {
   )
 
   const brand = restaurant?.brand_color || '#1D9E75'
+  const orderingEnabled = restaurant?.ordering_enabled !== false
   const WAITER = { ka:'გარსონი', en:'Call waiter', tr:'Garson çağır', ru:'Официант' }
   const BILL   = { ka:'ანგარიში', en:'Bill please',  tr:'Hesap iste',  ru:'Счёт' }
 
@@ -434,7 +436,7 @@ export default function MenuPage() {
                               </span>
                             )}
                           </div>
-                          {item.is_sold_out ? (
+                          {!orderingEnabled ? null : item.is_sold_out ? (
                             <span style={{ fontSize:11, fontWeight:800, color:'#E8192C', background:'#fee2e2', padding:'6px 12px', borderRadius:10, flexShrink:0 }}>Tükendi</span>
                           ) : (
                           <button className="add-btn-anim"
@@ -530,6 +532,7 @@ export default function MenuPage() {
         categories={categories} activeCategory={activeCategory}
         selectCategory={selectCategory} n={n} t={t}
         waiterLabel={WAITER[lang]||WAITER.en} billLabel={BILL[lang]||BILL.en}
+        orderingEnabled={orderingEnabled}
       />
 
       {/* ── ÜRÜN DETAY MODAL ── */}
@@ -592,7 +595,7 @@ export default function MenuPage() {
                   <p style={{ fontSize:11, color:'#aaa', margin:0 }}>Fiyat</p>
                   <span style={{ fontSize:28, fontWeight:900, color:brand }}>{detailItem.price} ₾</span>
                 </div>
-                {detailItem.is_sold_out ? (
+                {!orderingEnabled ? null : detailItem.is_sold_out ? (
                   <span style={{ background:'#fee2e2', color:'#E8192C', padding:'14px 32px', borderRadius:16, fontSize:16, fontWeight:800, letterSpacing:.3 }}>Tükendi</span>
                 ) : (
                 <button onClick={() => addToCart(detailItem)}
@@ -666,7 +669,7 @@ function LangBtn({ lang, i18n, brand, small }) {
 }
 
 // ── BOTTOM BAR ──
-function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal, setCartOpen, categories, activeCategory, selectCategory, n, t, waiterLabel, billLabel }) {
+function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal, setCartOpen, categories, activeCategory, selectCategory, n, t, waiterLabel, billLabel, orderingEnabled }) {
   const [menuOpen, setMenuOpen] = useState(false)
 
   return (
@@ -778,7 +781,8 @@ function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal
           </span>
         </button>
 
-        {/* Sepet */}
+        {/* Sepet — sadece sipariş modülü açıksa */}
+        {orderingEnabled && (
         <button onClick={() => setCartOpen(true)}
           style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:3,
             padding:'8px 4px', borderRadius:14, border:'none', cursor:'pointer',
@@ -800,6 +804,7 @@ function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal
             {cartCount>0?`${cartTotal.toFixed(0)} ₾`:'Sepet'}
           </span>
         </button>
+        )}
       </div>
     </>
   )
