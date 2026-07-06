@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useCurrency } from '../hooks/useCurrency'
 
 export default function CartDrawer({ cart, setCart, onClose, onOrder }) {
   const { t } = useTranslation()
+  const { format } = useCurrency()
   const [note, setNote] = useState('')
   const [placing, setPlacing] = useState(false)
 
@@ -35,7 +37,7 @@ export default function CartDrawer({ cart, setCart, onClose, onOrder }) {
             <div key={item.id} className="cart-item-row">
               <div className="ci-info">
                 <span className="ci-name">{item.name_en || item.name_ka}</span>
-                <span className="ci-price">{(item.price * item.qty).toFixed(2)} ₾</span>
+                <span className="ci-price">{format(item.price * item.qty)}</span>
               </div>
               <div className="ci-qty">
                 <button onClick={() => changeQty(item.id, -1)}>−</button>
@@ -57,7 +59,7 @@ export default function CartDrawer({ cart, setCart, onClose, onOrder }) {
         <div className="cart-footer">
           <div className="cart-total">
             <span>{t('total')}</span>
-            <span>{total.toFixed(2)} ₾</span>
+            <span>{format(total)}</span>
           </div>
           <button className="btn-primary btn-full" onClick={handleOrder} disabled={placing}
             style={{ opacity: placing ? 0.6 : 1, cursor: placing ? 'wait' : 'pointer' }}>

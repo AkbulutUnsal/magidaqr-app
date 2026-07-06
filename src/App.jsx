@@ -38,6 +38,7 @@ import SuperDashboard from './pages/super/SuperDashboard'
 import SuperPlans     from './pages/super/SuperPlans'
 import SuperStats     from './pages/super/SuperStats'
 import LoginPage      from './pages/auth/LoginPage'
+import ResetPasswordPage from './pages/auth/ResetPasswordPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 export default function App() {
@@ -51,6 +52,7 @@ export default function App() {
 
         {/* Auth */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         {/* Mutfak (personel cihazı - ayrı giriş) */}
         <Route path="/kitchen" element={

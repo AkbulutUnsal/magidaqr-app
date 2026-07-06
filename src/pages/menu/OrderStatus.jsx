@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../../lib/supabase'
+import { useCurrency } from '../../hooks/useCurrency'
 
 const STATUS_STEPS = ['pending','confirmed','preparing','ready','served']
 const STATUS_ICONS = { pending:'⏳', confirmed:'✅', preparing:'👨‍🍳', ready:'🔔', served:'🍽️', cancelled:'❌' }
@@ -19,6 +20,7 @@ export default function OrderStatus() {
   const { orderId } = useParams()
   const navigate = useNavigate()
   const { i18n } = useTranslation()
+  const { format } = useCurrency()
   const lang = i18n.language || 'en'
 
   const [order, setOrder] = useState(null)
@@ -170,12 +172,12 @@ export default function OrderStatus() {
           {order.order_items?.map(oi => (
             <div key={oi.id} style={{display:'flex',justifyContent:'space-between',padding:'7px 0',borderBottom:'1px solid #f4f4f2'}}>
               <span style={{fontSize:13,color:'#333'}}>{oi.quantity}× {n(oi.menu_item)}</span>
-              <span style={{fontSize:13,fontWeight:600,color:'#555'}}>{(oi.unit_price*oi.quantity).toFixed(2)} ₾</span>
+              <span style={{fontSize:13,fontWeight:600,color:'#555'}}>{format(oi.unit_price*oi.quantity)}</span>
             </div>
           ))}
           <div style={{display:'flex',justifyContent:'space-between',paddingTop:10,marginTop:4}}>
             <span style={{fontSize:14,fontWeight:700}}>Toplam</span>
-            <span style={{fontSize:16,fontWeight:800,color:brand}}>{Number(order.total_price).toFixed(2)} ₾</span>
+            <span style={{fontSize:16,fontWeight:800,color:brand}}>{format(order.total_price)}</span>
           </div>
         </div>
 

@@ -43,6 +43,8 @@ export default function SuperDashboard() {
     if (!phone) return setMsg('❌ Telefon zorunlu')
 
     setSaving(true); setMsg('')
+    let createdTenantId = null
+    let createdRestId = null
     try {
       const { data: tenant, error: te } = await supabase
         .from('tenants')
@@ -50,12 +52,14 @@ export default function SuperDashboard() {
           plan_expires_at: new Date(Date.now() + 14*24*60*60*1000).toISOString() })
         .select().single()
       if (te) throw te
+      createdTenantId = tenant.id
 
       const { data: rest, error: re } = await supabase
         .from('restaurants')
         .insert({ tenant_id: tenant.id, name_en: name, name_ka: name, slug, is_active: true })
         .select().single()
       if (re) throw re
+      createdRestId = rest.id
 
       let warnings = ''
 
@@ -106,7 +110,12 @@ export default function SuperDashboard() {
       setShowAdd(false)
       loadTenants()
     } catch(e) {
-      setMsg('❌ Hata: ' + (e.message || JSON.stringify(e)))
+      // Yarım kalan kayıt varsa (tenant/restaurant oluştu ama login oluşturulamadıysa) geri al —
+      // yoksa aynı hata her denemede yeni bir "hayalet" firma bırakır
+      if (createdRestId) await supabase.from('restaurants').delete().eq('id', createdRestId)
+      if (createdTenantId) await supabase.from('tenants').delete().eq('id', createdTenantId)
+      const cleanupNote = createdTenantId ? ' — yarım kalan kayıt otomatik temizlendi, aynı bilgilerle tekrar deneyebilirsin.' : ''
+      setMsg('❌ Hata: ' + (e.message || JSON.stringify(e)) + cleanupNote)
     }
     setSaving(false)
   }

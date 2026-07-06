@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
-import { formatPrice } from '../lib/currency'
+import { formatPrice } from './currency'
 
 export function useCurrency() {
   const { i18n } = useTranslation()
