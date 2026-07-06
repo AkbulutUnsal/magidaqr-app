@@ -16,6 +16,7 @@ export default function SuperDashboard() {
   const [confirmDelete, setConfirmDelete] = useState(null) // { id, name }
 
   const [adminEmails, setAdminEmails] = useState({})
+  const [openMenuId, setOpenMenuId] = useState(null)
 
   useEffect(() => { loadTenants() }, [])
 
@@ -498,17 +499,18 @@ export default function SuperDashboard() {
                     {new Date(t.created_at).toLocaleDateString('tr-TR')}
                   </td>
                   <td style={{padding:'14px 16px'}}>
-                    <div style={{display:'flex',gap:6}}>
+                    <div style={{display:'flex',gap:6,alignItems:'center',position:'relative'}}>
                       <button onClick={async()=>{
                           await supabase.from('tenants').update({ ai_addon: !t.ai_addon }).eq('id', t.id)
                           loadTenants()
                         }}
-                        style={{fontSize:11,fontWeight:600,color:t.ai_addon?'#8b5cf6':'#aaa',
+                        style={{width:30,height:30,display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,
+                          color:t.ai_addon?'#8b5cf6':'#aaa',
                           background:t.ai_addon?'#f5f3ff':'#f9f9f7',
                           border:`1px solid ${t.ai_addon?'#ddd6fe':'#eee'}`,
-                          padding:'5px 10px',borderRadius:8,cursor:'pointer',whiteSpace:'nowrap'}}
+                          borderRadius:8,cursor:'pointer',flexShrink:0}}
                         title={t.ai_addon?'AI eklentisini kapat':'AI eklentisini aç'}>
-                        ✨ AI {t.ai_addon?'✓':''}
+                        ✨
                       </button>
                       {rest && (() => {
                         const ordOn = rest.ordering_enabled ?? true
@@ -517,12 +519,13 @@ export default function SuperDashboard() {
                               await supabase.from('restaurants').update({ ordering_enabled: !ordOn }).eq('id', rest.id)
                               loadTenants()
                             }}
-                            style={{fontSize:11,fontWeight:600,color:ordOn?'#1D9E75':'#aaa',
+                            style={{width:30,height:30,display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,
+                              color:ordOn?'#1D9E75':'#aaa',
                               background:ordOn?'#e8f5ee':'#f9f9f7',
                               border:`1px solid ${ordOn?'#bbf7d0':'#eee'}`,
-                              padding:'5px 10px',borderRadius:8,cursor:'pointer',whiteSpace:'nowrap'}}
+                              borderRadius:8,cursor:'pointer',flexShrink:0}}
                             title={ordOn?'Sipariş modülünü kapat (sadece vitrin menü)':'Sipariş modülünü aç'}>
-                            🛒 Sipariş {ordOn?'✓':''}
+                            🛒
                           </button>
                         )
                       })()}
@@ -531,34 +534,57 @@ export default function SuperDashboard() {
                           await supabase.from('tenants').update({ plan: newPlan }).eq('id', t.id)
                           loadTenants()
                         }}
-                        style={{fontSize:11,fontWeight:600,color:t.plan==='advanced'?'#8b5cf6':'#1D9E75',
+                        style={{width:30,height:30,display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,fontWeight:700,
+                          color:t.plan==='advanced'?'#8b5cf6':'#1D9E75',
                           background:t.plan==='advanced'?'#f5f3ff':'#e8f5ee',
                           border:`1px solid ${t.plan==='advanced'?'#ddd6fe':'#bbf7d0'}`,
-                          padding:'5px 10px',borderRadius:8,cursor:'pointer',whiteSpace:'nowrap'}}
+                          borderRadius:8,cursor:'pointer',flexShrink:0}}
                         title={t.plan==='advanced'?'Gelişmiş\'ten Temel\'e düşür':'Temel\'den Gelişmiş\'e yükselt'}>
-                        {t.plan==='advanced' ? '↓ Temel\'e düşür' : '↑ Gelişmiş\'e yükselt'}
+                        {t.plan==='advanced' ? '↓' : '↑'}
                       </button>
-                      <button onClick={async()=>{
-                          const base = t.plan_expires_at && new Date(t.plan_expires_at) > new Date()
-                            ? new Date(t.plan_expires_at) : new Date()
-                          base.setFullYear(base.getFullYear() + 1)
-                          await supabase.from('tenants').update({ plan_expires_at: base.toISOString(), is_active: true }).eq('id', t.id)
-                          loadTenants()
-                        }}
-                        style={{fontSize:11,fontWeight:600,color:'#1D9E75',background:'#e8f5ee',border:'1px solid #bbf7d0',padding:'5px 10px',borderRadius:8,cursor:'pointer',whiteSpace:'nowrap'}}
-                        title="Aboneliği 1 yıl uzat">+1 yıl</button>
-                      <button onClick={async()=>{
-                          await supabase.from('tenants').update({is_active:!t.is_active}).eq('id',t.id)
-                          loadTenants()
-                        }}
-                        style={{fontSize:11,fontWeight:600,color:t.is_active?'#ef4444':'#1D9E75',background:'transparent',border:`1px solid ${t.is_active?'#fecaca':'#bbf7d0'}`,padding:'5px 12px',borderRadius:8,cursor:'pointer'}}>
-                        {t.is_active ? 'Durdur' : 'Aktifleştir'}
+
+                      <button onClick={() => setOpenMenuId(openMenuId === t.id ? null : t.id)}
+                        style={{width:30,height:30,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,
+                          color:'#888',background:'transparent',border:'1px solid #eee',borderRadius:8,cursor:'pointer',flexShrink:0}}
+                        title="Diğer işlemler">
+                        ⋮
                       </button>
-                      <button onClick={() => setConfirmDelete({ id: t.id, name: t.name })}
-                        style={{fontSize:11,fontWeight:600,color:'#ef4444',background:'transparent',border:'1px solid #fecaca',padding:'5px 10px',borderRadius:8,cursor:'pointer'}}
-                        title="Firmayı kalıcı sil">
-                        🗑
-                      </button>
+
+                      {openMenuId === t.id && (
+                        <>
+                          <div onClick={() => setOpenMenuId(null)} style={{position:'fixed',inset:0,zIndex:90}} />
+                          <div style={{position:'absolute',right:0,top:36,background:'#fff',border:'1px solid #e8e8e4',
+                            borderRadius:10,boxShadow:'0 8px 28px rgba(0,0,0,.14)',overflow:'hidden',zIndex:91,minWidth:180}}>
+                            <button onClick={async()=>{
+                                const base = t.plan_expires_at && new Date(t.plan_expires_at) > new Date()
+                                  ? new Date(t.plan_expires_at) : new Date()
+                                base.setFullYear(base.getFullYear() + 1)
+                                await supabase.from('tenants').update({ plan_expires_at: base.toISOString(), is_active: true }).eq('id', t.id)
+                                setOpenMenuId(null)
+                                loadTenants()
+                              }}
+                              style={{width:'100%',textAlign:'left',padding:'10px 14px',border:'none',background:'#fff',
+                                cursor:'pointer',fontSize:12.5,fontWeight:600,color:'#1D9E75'}}>
+                              📅 Aboneliği 1 yıl uzat
+                            </button>
+                            <button onClick={async()=>{
+                                await supabase.from('tenants').update({is_active:!t.is_active}).eq('id',t.id)
+                                setOpenMenuId(null)
+                                loadTenants()
+                              }}
+                              style={{width:'100%',textAlign:'left',padding:'10px 14px',border:'none',background:'#fff',
+                                cursor:'pointer',fontSize:12.5,fontWeight:600,color:t.is_active?'#ef4444':'#1D9E75',
+                                borderTop:'1px solid #f4f4f2'}}>
+                              {t.is_active ? '⏸ Durdur' : '▶ Aktifleştir'}
+                            </button>
+                            <button onClick={() => { setConfirmDelete({ id: t.id, name: t.name }); setOpenMenuId(null) }}
+                              style={{width:'100%',textAlign:'left',padding:'10px 14px',border:'none',background:'#fff',
+                                cursor:'pointer',fontSize:12.5,fontWeight:600,color:'#ef4444',borderTop:'1px solid #f4f4f2'}}>
+                              🗑️ Firmayı kalıcı sil
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
