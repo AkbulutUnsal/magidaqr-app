@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import i18n from '../i18n'
 
 const AuthContext = createContext(null)
 
@@ -46,6 +47,19 @@ export function AuthProvider({ children }) {
       .single()
     setProfile(data)
     setLoading(false)
+
+    // Personel restoranın diline otomatik geçsin (super_admin'in restaurant_id'si yok, etkilenmez)
+    if (data?.restaurant_id) {
+      const { data: rest } = await supabase
+        .from('restaurants')
+        .select('default_language, default_lang')
+        .eq('id', data.restaurant_id)
+        .single()
+      const restLang = rest?.default_language || rest?.default_lang
+      if (restLang && ['ka', 'en', 'tr', 'ru'].includes(restLang)) {
+        i18n.changeLanguage(restLang)
+      }
+    }
   }
 
   async function signIn(email, password) {
