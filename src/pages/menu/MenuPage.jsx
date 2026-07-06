@@ -728,11 +728,12 @@ function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal
       <div style={{ position:'fixed', bottom:0, left:'50%', transform:'translateX(-50%)',
         width:'100%', maxWidth:480, background:'rgba(255,255,255,0.97)',
         backdropFilter:'blur(12px)', borderTop:'1px solid rgba(235,235,235,0.8)',
-        zIndex:60, display:'flex', alignItems:'center',
+        zIndex:60, display:'flex', alignItems:'center', justifyContent:'center',
         padding:'8px 12px 22px', gap:6,
         boxShadow:'0 -4px 24px rgba(0,0,0,0.1)' }}>
 
-        {/* Garson */}
+        {/* Garson — sadece sipariş modülü açıksa (garson çağırmanın anlamı olması için) */}
+        {orderingEnabled && (
         <button onClick={(e) => { e.preventDefault(); sendCall('waiter') }} disabled={waiterSent}
           style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:3,
             padding:'8px 4px', borderRadius:14, border:'none', cursor:waiterSent?'default':'pointer',
@@ -747,6 +748,7 @@ function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal
             {waiterSent?'✓ Tamam':waiterLabel}
           </span>
         </button>
+        )}
 
         {/* Menü zil */}
         <button onClick={() => setMenuOpen(o => !o)}
@@ -765,7 +767,8 @@ function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal
           <span style={{ fontSize:9, fontWeight:800, color:'#E8192C' }}>{t('menu')}</span>
         </button>
 
-        {/* Hesap */}
+        {/* Hesap — sadece sipariş modülü açıksa */}
+        {orderingEnabled && (
         <button onClick={(e) => { e.preventDefault(); sendCall('bill') }} disabled={billSent}
           style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:3,
             padding:'8px 4px', borderRadius:14, border:'none', cursor:billSent?'default':'pointer',
@@ -782,6 +785,7 @@ function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal
             {billSent?'✓ Tamam':billLabel}
           </span>
         </button>
+        )}
 
         {/* Sepet — sadece sipariş modülü açıksa */}
         {orderingEnabled && (
