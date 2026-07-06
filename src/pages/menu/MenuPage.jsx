@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { track, trackOnce } from '../../lib/analytics'
 import { supabase } from '../../lib/supabase'
+import { useCurrency } from '../../hooks/useCurrency'
 import CartDrawer from '../../components/CartDrawer'
 
 const LANG_FLAGS = { ka:'GE', en:'EN', tr:'TR', ru:'RU' }
@@ -22,6 +23,7 @@ const CAT_ICONS = {
 export default function MenuPage() {
   const { restaurantSlug, tableId } = useParams()
   const { t, i18n } = useTranslation()
+  const { format } = useCurrency()
   const navigate = useNavigate()
   const lang = i18n.language
 
@@ -371,7 +373,7 @@ export default function MenuPage() {
                     <div style={{ position:'absolute', inset:0, background:'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 60%)' }} />
                     <div style={{ position:'absolute', bottom:8, left:10, right:10 }}>
                       <p style={{ fontSize:11, fontWeight:700, color:'#fff', margin:0, lineHeight:1.3 }}>{n(item)}</p>
-                      <p style={{ fontSize:12, fontWeight:800, color:'#fff', margin:'2px 0 0' }}>{item.price} ₾</p>
+                      <p style={{ fontSize:12, fontWeight:800, color:'#fff', margin:'2px 0 0' }}>{format(item.price)}</p>
                     </div>
                   </div>
                 </div>
@@ -428,7 +430,7 @@ export default function MenuPage() {
                         </div>
                         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                            <span style={{ fontSize:16, fontWeight:800, color:brand }}>{item.price} ₾</span>
+                            <span style={{ fontSize:16, fontWeight:800, color:brand }}>{format(item.price)}</span>
                             {item.calories && (
                               <span style={{ fontSize:10, color:'#bbb', display:'flex', alignItems:'center', gap:2 }}>
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2"><path d="M12 2c0 6-8 8-8 14a8 8 0 0 0 16 0c0-6-8-8-8-14z"/></svg>
@@ -532,7 +534,7 @@ export default function MenuPage() {
         categories={categories} activeCategory={activeCategory}
         selectCategory={selectCategory} n={n} t={t}
         waiterLabel={WAITER[lang]||WAITER.en} billLabel={BILL[lang]||BILL.en}
-        orderingEnabled={orderingEnabled}
+        orderingEnabled={orderingEnabled} format={format}
       />
 
       {/* ── ÜRÜN DETAY MODAL ── */}
@@ -593,7 +595,7 @@ export default function MenuPage() {
                 paddingTop:16, borderTop:'1px solid #f4f4f2' }}>
                 <div>
                   <p style={{ fontSize:11, color:'#aaa', margin:0 }}>Fiyat</p>
-                  <span style={{ fontSize:28, fontWeight:900, color:brand }}>{detailItem.price} ₾</span>
+                  <span style={{ fontSize:28, fontWeight:900, color:brand }}>{format(detailItem.price)}</span>
                 </div>
                 {!orderingEnabled ? null : detailItem.is_sold_out ? (
                   <span style={{ background:'#fee2e2', color:'#E8192C', padding:'14px 32px', borderRadius:16, fontSize:16, fontWeight:800, letterSpacing:.3 }}>Tükendi</span>
@@ -669,7 +671,7 @@ function LangBtn({ lang, i18n, brand, small }) {
 }
 
 // ── BOTTOM BAR ──
-function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal, setCartOpen, categories, activeCategory, selectCategory, n, t, waiterLabel, billLabel, orderingEnabled }) {
+function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal, setCartOpen, categories, activeCategory, selectCategory, n, t, waiterLabel, billLabel, orderingEnabled, format }) {
   const [menuOpen, setMenuOpen] = useState(false)
 
   return (
@@ -801,7 +803,7 @@ function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal
             <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
           </svg>
           <span style={{ fontSize:9, fontWeight:700, color:cartCount>0?'#fff':'#999', whiteSpace:'nowrap' }}>
-            {cartCount>0?`${cartTotal.toFixed(0)} ₾`:'Sepet'}
+            {cartCount>0?format(cartTotal):'Sepet'}
           </span>
         </button>
         )}

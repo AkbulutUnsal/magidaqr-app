@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../hooks/useAuth'
 import { supabase } from '../../lib/supabase'
+import { useCurrency } from '../../hooks/useCurrency'
 
 /* ───────────────────────────────────────────────────────────
    magidaQR · Ürünler  (qrmenum referans · yeşil tema #1D9E75)
@@ -21,13 +22,10 @@ function slugify(s) {
     .replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c')
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 }
-function money(v) {
-  const n = Number(v || 0)
-  return n.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₾'
-}
 
 export default function AdminMenu() {
   const { t, i18n } = useTranslation()
+  const { format } = useCurrency()
   const { profile } = useAuth()
   const lang = (i18n.language || 'tr').slice(0, 2)
 
@@ -255,7 +253,7 @@ export default function AdminMenu() {
                       {sub && <p style={{ fontSize: 11, color: '#bbb', fontFamily: 'monospace' }}>{sub}</p>}
                     </td>
                     <td style={{ ...td, color: '#555', fontSize: 13 }}>{it.category ? dispName(it.category) : '—'}</td>
-                    <td style={{ ...td, textAlign: 'right', fontWeight: 700, fontSize: 14 }}>{money(it.price)}</td>
+                    <td style={{ ...td, textAlign: 'right', fontWeight: 700, fontSize: 14 }}>{format(it.price)}</td>
                     <td style={{ ...td, textAlign: 'center' }}><Toggle on={!!it.is_featured} color={AMBER} onClick={() => toggleField(it, 'is_featured')} /></td>
                     <td style={{ ...td, textAlign: 'center' }}><Toggle on={!!it.is_available} color={GREEN} onClick={() => toggleField(it, 'is_available')} /></td>
                     {hasSoldOut && <td style={{ ...td, textAlign: 'center' }}><Toggle on={!!it.is_sold_out} color={'#E8192C'} onClick={() => toggleField(it, 'is_sold_out')} /></td>}
