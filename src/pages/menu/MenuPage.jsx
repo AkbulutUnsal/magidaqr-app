@@ -20,6 +20,13 @@ const CAT_ICONS = {
   default: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 17h18"/><path d="M12 3a9 9 0 0 1 9 9H3a9 9 0 0 1 9-9z"/><line x1="12" y1="3" x2="12" y2="1"/></svg>,
 }
 
+const ALLERGEN_COLORS = ['#F97316','#3B82F6','#F59E0B','#8B5CF6','#10B981','#EC4899','#EF4444','#06B6D4']
+function allergenColor(id) {
+  let hash = 0
+  for (let i = 0; i < (id || '').length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0
+  return ALLERGEN_COLORS[hash % ALLERGEN_COLORS.length]
+}
+
 export default function MenuPage() {
   const { restaurantSlug, tableId } = useParams()
   const { t, i18n } = useTranslation()
@@ -426,23 +433,31 @@ export default function MenuPage() {
             const catDesc = n(cat, 'description')
             return (
               <div key={cat.id} id={`cat-${cat.id}`} style={{ marginBottom:28 }}>
-                {/* Kategori "hero" başlığı */}
-                <div style={{ borderRadius:18, padding:'18px 18px', marginBottom:16,
-                  background:`linear-gradient(135deg, ${brand}, ${brand}cc)`, position:'relative', overflow:'hidden' }}>
-                  <div style={{ position:'absolute', right:-20, top:-20, width:120, height:120, borderRadius:'50%', background:'rgba(255,255,255,0.08)' }}/>
+                {/* Kategori "hero" başlığı — kapak fotoğrafı varsa onu kullan, yoksa marka rengi gradient */}
+                <div style={{ borderRadius:18, padding:'20px 18px', marginBottom:16, minHeight:96,
+                  background: cat.cover_url
+                    ? `linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.55)), url(${cat.cover_url})`
+                    : `linear-gradient(135deg, ${brand}, ${brand}cc)`,
+                  backgroundSize:'cover', backgroundPosition:'center',
+                  position:'relative', overflow:'hidden' }}>
+                  {!cat.cover_url && (
+                    <div style={{ position:'absolute', right:-20, top:-20, width:120, height:120, borderRadius:'50%', background:'rgba(255,255,255,0.08)' }}/>
+                  )}
                   <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom: catDesc ? 8 : 4, position:'relative' }}>
-                    <div style={{ width:34, height:34, borderRadius:10, background:'rgba(255,255,255,0.2)',
-                      display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <div style={{ width:34, height:34, borderRadius:10, background:'rgba(255,255,255,0.22)',
+                      display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, backdropFilter:'blur(2px)' }}>
                       {(CAT_ICONS[cat.icon] || CAT_ICONS.default)('#fff')}
                     </div>
-                    <h2 style={{ fontSize:19, fontWeight:800, color:'#fff', margin:0 }}>{n(cat)}</h2>
+                    <h2 style={{ fontSize:19, fontWeight:800, color:'#fff', margin:0, textShadow: cat.cover_url ? '0 1px 6px rgba(0,0,0,0.4)' : 'none' }}>{n(cat)}</h2>
                   </div>
                   {catDesc && (
-                    <p style={{ fontSize:12.5, color:'rgba(255,255,255,0.9)', margin:'0 0 6px', lineHeight:1.5, position:'relative' }}>
+                    <p style={{ fontSize:12.5, color:'rgba(255,255,255,0.92)', margin:'0 0 6px', lineHeight:1.5, position:'relative',
+                      textShadow: cat.cover_url ? '0 1px 4px rgba(0,0,0,0.4)' : 'none' }}>
                       {catDesc}
                     </p>
                   )}
-                  <p style={{ fontSize:11, color:'rgba(255,255,255,0.75)', margin:0, fontWeight:600, position:'relative' }}>
+                  <p style={{ fontSize:11, color:'rgba(255,255,255,0.85)', margin:0, fontWeight:600, position:'relative',
+                    textShadow: cat.cover_url ? '0 1px 4px rgba(0,0,0,0.4)' : 'none' }}>
                     {catItems.length} {lang==='tr'?'ürün':lang==='ka'?'პროდუქტი':lang==='ru'?'блюд':'items'}
                   </p>
                 </div>
@@ -456,71 +471,71 @@ export default function MenuPage() {
                     <div key={item.id} className="item-card"
                       onClick={() => openDetail(item)}
                       style={{ background:'#fff', borderRadius:18, overflow:'hidden', cursor:'pointer',
-                        boxShadow:'0 2px 12px rgba(0,0,0,0.06)',
-                        display:'flex', opacity: item.is_sold_out?0.6:1, animation:`fadeUp 0.4s ease ${idx*0.05}s both` }}>
-                      {/* Sol — görsel */}
-                      <div style={{ width:110, minHeight:110, background:'#f4f4f2', overflow:'hidden', flexShrink:0, position:'relative' }}>
+                        boxShadow:'0 2px 12px rgba(0,0,0,0.06)', padding:12,
+                        display:'flex', gap:12, opacity: item.is_sold_out?0.6:1, animation:`fadeUp 0.4s ease ${idx*0.05}s both` }}>
+                      {/* Sol — kare görsel */}
+                      <div style={{ width:72, height:72, borderRadius:14, background:'#f4f4f2', overflow:'hidden', flexShrink:0, position:'relative' }}>
                         {item.image_url
                           ? <img src={item.image_url} alt={n(item)} style={{ width:'100%', height:'100%', objectFit:'cover', filter:item.is_sold_out?'grayscale(1)':'none' }} />
-                          : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:28 }}>🍽️</div>
+                          : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22 }}>🍽️</div>
                         }
-                        {item.is_sold_out && <span style={{ position:'absolute', top:6, left:6, background:'#E8192C', color:'#fff', fontSize:9, fontWeight:800, padding:'2px 7px', borderRadius:6, letterSpacing:.3 }}>TÜKENDİ</span>}
+                        {item.is_sold_out && <span style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.55)', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:8, fontWeight:800 }}>TÜKENDİ</span>}
                       </div>
-                      {/* Sağ — bilgi + ekle */}
-                      <div style={{ flex:1, padding:'12px 12px 12px 14px', display:'flex', flexDirection:'column', justifyContent:'space-between', minWidth:0 }}>
+                      {/* Sağ — bilgi */}
+                      <div style={{ flex:1, display:'flex', flexDirection:'column', justifyContent:'space-between', minWidth:0 }}>
                         <div>
-                          {/* Rozetler */}
-                          {(item.is_featured || item.is_chef_pick || isNew) && (
-                            <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginBottom:5 }}>
+                          {/* Üst satır: rozetler + fiyat */}
+                          <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:8, marginBottom:4 }}>
+                            <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
                               {item.is_featured && (
-                                <span style={{ fontSize:9, fontWeight:800, color:'#fff', background:'#f59e0b', padding:'2px 7px', borderRadius:6 }}>
+                                <span style={{ fontSize:9, fontWeight:800, color:'#fff', background:'#f59e0b', padding:'2px 7px', borderRadius:6, whiteSpace:'nowrap' }}>
                                   {lang==='tr'?'Popüler':lang==='ka'?'პოპულარული':lang==='ru'?'Популярно':'Popular'}
                                 </span>
                               )}
                               {item.is_chef_pick && (
-                                <span style={{ fontSize:9, fontWeight:800, color:'#fff', background:'#8b5cf6', padding:'2px 7px', borderRadius:6 }}>
+                                <span style={{ fontSize:9, fontWeight:800, color:'#fff', background:'#8b5cf6', padding:'2px 7px', borderRadius:6, whiteSpace:'nowrap' }}>
                                   {lang==='tr'?'Şef Önerisi':lang==='ka'?'შეფის რჩევა':lang==='ru'?'Выбор шефа':"Chef's Pick"}
                                 </span>
                               )}
                               {isNew && (
-                                <span style={{ fontSize:9, fontWeight:800, color:'#fff', background:brand, padding:'2px 7px', borderRadius:6 }}>
+                                <span style={{ fontSize:9, fontWeight:800, color:'#fff', background:brand, padding:'2px 7px', borderRadius:6, whiteSpace:'nowrap' }}>
                                   {lang==='tr'?'Yeni':lang==='ka'?'ახალი':lang==='ru'?'Новинка':'New'}
                                 </span>
                               )}
                             </div>
-                          )}
-                          <h3 style={{ fontSize:14, fontWeight:700, margin:'0 0 4px', color:'#111', lineHeight:1.3 }}>{n(item)}</h3>
+                            <span style={{ fontSize:15, fontWeight:800, color:brand, whiteSpace:'nowrap', flexShrink:0 }}>{format(item.price)}</span>
+                          </div>
+                          <h3 style={{ fontSize:14, fontWeight:700, margin:'0 0 3px', color:'#111', lineHeight:1.3 }}>{n(item)}</h3>
                           {n(item,'description') && (
                             <p style={{ fontSize:11, color:'#999', margin:'0 0 6px', lineHeight:1.5,
                               display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
                               {n(item,'description')}
                             </p>
                           )}
-                          {itemAllergens.length > 0 && (
-                            <div style={{ display:'flex', gap:3, marginBottom:6 }}>
-                              {itemAllergens.slice(0,5).map(a => (
-                                <span key={a.id} title={n(a)} style={{ fontSize:12, lineHeight:1 }}>{a.icon}</span>
-                              ))}
-                            </div>
-                          )}
                         </div>
-                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                            <span style={{ fontSize:16, fontWeight:800, color:brand }}>{format(item.price)}</span>
+                        {/* Alt satır: kalori kapsülü + alerjen daireleri + ekle */}
+                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
                             {item.calories && (
-                              <span style={{ fontSize:10, color:'#bbb', display:'flex', alignItems:'center', gap:2 }}>
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2"><path d="M12 2c0 6-8 8-8 14a8 8 0 0 0 16 0c0-6-8-8-8-14z"/></svg>
+                              <span style={{ fontSize:10, fontWeight:600, color:'#888', background:'#f4f4f2', padding:'3px 9px', borderRadius:20, whiteSpace:'nowrap' }}>
                                 {item.calories} kcal
                               </span>
                             )}
+                            {itemAllergens.slice(0,5).map(a => (
+                              <span key={a.id} title={n(a)}
+                                style={{ width:19, height:19, borderRadius:'50%', background:allergenColor(a.id)+'22',
+                                  display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, flexShrink:0 }}>
+                                {a.icon}
+                              </span>
+                            ))}
                           </div>
                           {!orderingEnabled ? null : item.is_sold_out ? (
-                            <span style={{ fontSize:11, fontWeight:800, color:'#E8192C', background:'#fee2e2', padding:'6px 12px', borderRadius:10, flexShrink:0 }}>Tükendi</span>
+                            <span style={{ fontSize:10, fontWeight:800, color:'#E8192C', background:'#fee2e2', padding:'5px 10px', borderRadius:10, flexShrink:0, whiteSpace:'nowrap' }}>Tükendi</span>
                           ) : (
                           <button className="add-btn-anim"
                             onClick={e => { e.stopPropagation(); addToCart(item) }}
-                            style={{ width:32, height:32, borderRadius:10, background:brand, color:'#fff',
-                              border:'none', fontSize:22, cursor:'pointer', display:'flex',
+                            style={{ width:28, height:28, borderRadius:9, background:brand, color:'#fff',
+                              border:'none', fontSize:19, cursor:'pointer', display:'flex',
                               alignItems:'center', justifyContent:'center', lineHeight:1,
                               boxShadow:`0 3px 10px ${brand}60`, flexShrink:0 }}>
                             +
