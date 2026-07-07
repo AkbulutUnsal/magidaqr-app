@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../hooks/useAuth'
 import { supabase } from '../../lib/supabase'
@@ -29,6 +29,18 @@ export default function AdminSections() {
   const [edit, setEdit] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [reorder, setReorder] = useState(false)
+  const [uploading, setUploading] = useState(false)
+
+  async function uploadSectionImage(file) {
+    setUploading(true)
+    const ext = file.name.split('.').pop()
+    const path = `${profile.restaurant_id}/section-${Date.now()}.${ext}`
+    const { error } = await supabase.storage.from('menu-images').upload(path, file, { upsert: true })
+    setUploading(false)
+    if (error) { alert('Yükleme hatası: ' + error.message); return null }
+    const { data: { publicUrl } } = supabase.storage.from('menu-images').getPublicUrl(path)
+    return publicUrl
+  }
 
   useEffect(() => { if (profile?.restaurant_id) load() }, [profile?.restaurant_id])
 
@@ -161,17 +173,25 @@ export default function AdminSections() {
         )}
       </div>
 
-      {showForm && <SectionForm sec={edit} onSave={save} onClose={() => { setShowForm(false); setEdit(null) }} />}
+      {showForm && <SectionForm sec={edit} onUpload={uploadSectionImage} uploading={uploading} onSave={save} onClose={() => { setShowForm(false); setEdit(null) }} />}
     </div>
   )
 }
 
-function SectionForm({ sec, onSave, onClose }) {
+function SectionForm({ sec, onUpload, uploading, onSave, onClose }) {
   const [f, setF] = useState({
     name_ka: sec?.name_ka || '', name_en: sec?.name_en || '', name_tr: sec?.name_tr || '', name_ru: sec?.name_ru || '',
     slug: sec?.slug || '', icon: sec?.icon || '', image_url: sec?.image_url || '', is_active: sec?.is_active ?? true,
   })
   const set = (k, v) => setF(p => ({ ...p, [k]: v }))
+  const fileInputRef = useRef(null)
+
+  async function onFile(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const url = await onUpload(file)
+    if (url) set('image_url', url)
+  }
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '50px 16px', zIndex: 50, overflowY: 'auto' }}>
@@ -197,8 +217,15 @@ function SectionForm({ sec, onSave, onClose }) {
               {['tr', 'en', 'ka', 'ru'].map(l => <input key={l} value={f[`name_${l}`]} onChange={e => set(`name_${l}`, e.target.value)} placeholder={l.toUpperCase()} style={fInput} />)}
             </div>
           </div>
-          <div><label style={fLabel}>Görsel URL <span style={{ fontWeight: 400, color: '#bbb' }}>(opsiyonel — varsa ikon yerine kullanılır)</span></label>
-            <input value={f.image_url} onChange={e => set('image_url', e.target.value)} placeholder="https://..." style={fInput} />
+          <div><label style={fLabel}>Görsel <span style={{ fontWeight: 400, color: '#bbb' }}>(opsiyonel — varsa ikon yerine kullanılır)</span></label>
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={onFile} style={{ display: 'none' }} />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading}
+                style={{ padding: '9px 14px', border: `1px solid ${BORDER}`, borderRadius: 10, background: '#fff', fontSize: 12.5, fontWeight: 600, color: '#444', cursor: uploading ? 'wait' : 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                📤 {uploading ? 'Yükleniyor...' : 'Görsel yükle'}
+              </button>
+              <input value={f.image_url} onChange={e => set('image_url', e.target.value)} placeholder="veya URL yapıştır" style={fInput} />
+            </div>
           </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, color: '#333', cursor: 'pointer', background: '#fafafa', borderRadius: 12, padding: 14 }}>
             <input type="checkbox" checked={f.is_active} onChange={e => set('is_active', e.target.checked)} style={{ width: 16, height: 16, accentColor: GREEN, cursor: 'pointer' }} /> Aktif (menüde göster)

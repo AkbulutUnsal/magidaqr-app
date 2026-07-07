@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../hooks/useAuth'
@@ -33,6 +33,18 @@ export default function AdminCategories() {
   const [showForm, setShowForm] = useState(false)
   const [reorder, setReorder] = useState(false)
   const [sectionFilter, setSectionFilter] = useState('')
+  const [uploading, setUploading] = useState(false)
+
+  async function uploadCategoryImage(file) {
+    setUploading(true)
+    const ext = file.name.split('.').pop()
+    const path = `${profile.restaurant_id}/category-${Date.now()}.${ext}`
+    const { error } = await supabase.storage.from('menu-images').upload(path, file, { upsert: true })
+    setUploading(false)
+    if (error) { alert('Yükleme hatası: ' + error.message); return null }
+    const { data: { publicUrl } } = supabase.storage.from('menu-images').getPublicUrl(path)
+    return publicUrl
+  }
 
   useEffect(() => { if (profile?.restaurant_id) load() }, [profile?.restaurant_id])
 
@@ -58,6 +70,7 @@ export default function AdminCategories() {
 
   const sample = cats[0] || {}
   const hasImage = 'image_url' in sample
+  const hasDescription = 'description_tr' in sample || 'description_en' in sample
   const statusField = 'is_active' in sample ? 'is_active' : 'is_available' in sample ? 'is_available' : null
   const hasSection = 'section_id' in sample
   const groupField = !hasSection ? (GROUP_FIELDS.find(k => k in sample) || null) : null
@@ -101,6 +114,12 @@ export default function AdminCategories() {
       name_ka: form.name_ka, name_en: form.name_en, name_tr: form.name_tr, name_ru: form.name_ru,
     }
     if (hasImage) payload.image_url = form.image_url || null
+    if (hasDescription) {
+      payload.description_ka = form.description_ka || null
+      payload.description_en = form.description_en || null
+      payload.description_tr = form.description_tr || null
+      payload.description_ru = form.description_ru || null
+    }
     if (statusField) payload[statusField] = form.active
     if (hasSection) payload.section_id = form.section_id || null
     else if (groupField) payload[groupField] = form.group || null
@@ -195,8 +214,9 @@ export default function AdminCategories() {
 
       {showForm && (
         <CategoryForm cat={edit} dispName={dispName}
-          hasImage={hasImage} statusField={statusField} hasSection={hasSection} sections={sections}
+          hasImage={hasImage} hasDescription={hasDescription} statusField={statusField} hasSection={hasSection} sections={sections}
           groupField={groupField} groupOptions={groupOptions} hasOutlet={hasOutlet} outlets={outlets}
+          onUpload={uploadCategoryImage} uploading={uploading}
           onSave={save} onClose={() => { setShowForm(false); setEdit(null) }} />
       )}
 
@@ -209,9 +229,10 @@ export default function AdminCategories() {
   )
 }
 
-function CategoryForm({ cat, dispName, hasImage, statusField, hasSection, sections, groupField, groupOptions, hasOutlet, outlets, onSave, onClose }) {
+function CategoryForm({ cat, dispName, hasImage, hasDescription, statusField, hasSection, sections, groupField, groupOptions, hasOutlet, outlets, onUpload, uploading, onSave, onClose }) {
   const [form, setForm] = useState({
     name_ka: cat?.name_ka || '', name_en: cat?.name_en || '', name_tr: cat?.name_tr || '', name_ru: cat?.name_ru || '',
+    description_ka: cat?.description_ka || '', description_en: cat?.description_en || '', description_tr: cat?.description_tr || '', description_ru: cat?.description_ru || '',
     image_url: cat?.image_url || '',
     active: statusField ? (cat?.[statusField] ?? true) : true,
     section_id: cat?.section_id || '',
@@ -219,6 +240,14 @@ function CategoryForm({ cat, dispName, hasImage, statusField, hasSection, sectio
     outlet_id: cat?.outlet_id || '',
   })
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
+  const fileInputRef = useRef(null)
+
+  async function onFile(e) {
+    const f = e.target.files?.[0]
+    if (!f) return
+    const url = await onUpload(f)
+    if (url) set('image_url', url)
+  }
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '60px 16px', zIndex: 50, overflowY: 'auto' }}>
@@ -233,7 +262,17 @@ function CategoryForm({ cat, dispName, hasImage, statusField, hasSection, sectio
               <div style={{ width: 60, height: 60, borderRadius: 12, background: '#f4f4f2', border: `1px solid ${BORDER}`, overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ccc', fontSize: 20 }}>
                 {form.image_url ? <img src={form.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '📁'}
               </div>
-              <div style={{ flex: 1 }}><label style={fLabel}>Görsel URL</label><input value={form.image_url} onChange={e => set('image_url', e.target.value)} style={fInput} placeholder="https://..." /></div>
+              <div style={{ flex: 1 }}>
+                <label style={fLabel}>Kapak Görseli</label>
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={onFile} style={{ display: 'none' }} />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading}
+                    style={{ padding: '9px 14px', border: `1px solid ${BORDER}`, borderRadius: 10, background: '#fff', fontSize: 12.5, fontWeight: 600, color: '#444', cursor: uploading ? 'wait' : 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                    📤 {uploading ? 'Yükleniyor...' : 'Kapak yükle'}
+                  </button>
+                  <input value={form.image_url} onChange={e => set('image_url', e.target.value)} style={fInput} placeholder="veya URL yapıştır" />
+                </div>
+              </div>
             </div>
           )}
           <div>
@@ -242,6 +281,15 @@ function CategoryForm({ cat, dispName, hasImage, statusField, hasSection, sectio
               {['tr', 'en', 'ka', 'ru'].map(l => <input key={l} value={form[`name_${l}`]} onChange={e => set(`name_${l}`, e.target.value)} style={fInput} placeholder={l.toUpperCase()} />)}
             </div>
           </div>
+
+          {hasDescription && (
+            <div>
+              <label style={fLabel}>Açıklama <span style={{ fontWeight: 400, color: '#bbb' }}>(opsiyonel — kategori başlığının altında görünür)</span></label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {['tr', 'en', 'ka', 'ru'].map(l => <input key={l} value={form[`description_${l}`]} onChange={e => set(`description_${l}`, e.target.value)} style={fInput} placeholder={`${l.toUpperCase()} açıklama...`} />)}
+              </div>
+            </div>
+          )}
 
           <div style={{ display: 'grid', gridTemplateColumns: (hasSection || groupField) && hasOutlet ? '1fr 1fr' : '1fr', gap: 10 }}>
             {hasSection ? (

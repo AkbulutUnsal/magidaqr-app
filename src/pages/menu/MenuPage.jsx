@@ -50,7 +50,22 @@ export default function MenuPage() {
   const [campaigns, setCampaigns]   = useState([])
   const [allergens, setAllergens]   = useState([])
   const [infoPages, setInfoPages]   = useState([])
+  const [sections, setSections]     = useState([])
+  const [showSplash, setShowSplash] = useState(true)
+  const [showPicker, setShowPicker] = useState(false)
   const headerRef = useRef(null)
+
+  useEffect(() => {
+    if (loading) return
+    const timer = setTimeout(() => dismissSplash(), 1800)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading])
+
+  function dismissSplash() {
+    setShowSplash(false)
+    if (sections.length > 0) setShowPicker(true)
+  }
 
   useEffect(() => {
     async function load() {
@@ -60,13 +75,14 @@ export default function MenuPage() {
       if (!['ka','en','tr','ru'].includes(lang)) i18n.changeLanguage(rest.default_language || rest.default_lang || 'ka')
       const { data: table } = await supabase.from('tables').select('*').eq('id', tableId).single()
       setTableInfo(table)
-      const [{ data: cats }, { data: menuItems }, { data: heroData }, { data: campData }, { data: allergData }, { data: infoData }] = await Promise.all([
+      const [{ data: cats }, { data: menuItems }, { data: heroData }, { data: campData }, { data: allergData }, { data: infoData }, secRes] = await Promise.all([
         supabase.from('menu_categories').select('*').eq('restaurant_id', rest.id).eq('is_active', true).order('sort_order'),
         supabase.from('menu_items').select('*').eq('restaurant_id', rest.id).order('sort_order'),
         supabase.from('hero_cards').select('*').eq('restaurant_id', rest.id).eq('is_active', true).order('sort_order'),
         supabase.from('campaigns').select('*').eq('restaurant_id', rest.id).eq('is_active', true).order('sort_order'),
         supabase.from('allergens').select('*').eq('restaurant_id', rest.id),
-        supabase.from('info_pages').select('id,slug,title_ka,title_en,title_tr,title_ru').eq('restaurant_id', rest.id).eq('is_published', true).order('sort_order')
+        supabase.from('info_pages').select('id,slug,title_ka,title_en,title_tr,title_ru').eq('restaurant_id', rest.id).eq('is_published', true).order('sort_order'),
+        supabase.from('menu_sections').select('*').eq('restaurant_id', rest.id).eq('is_active', true).order('sort_order').then(r => r, () => ({ data: [] })),
       ])
       setCategories(cats || [])
       setItems(menuItems || [])
@@ -74,6 +90,7 @@ export default function MenuPage() {
       setCampaigns(campData || [])
       setAllergens(allergData || [])
       setInfoPages(infoData || [])
+      setSections(secRes?.data || [])
       setLoading(false)
 
       // ── Analitik: menü açıldı + sayfa görüntülendi ──
@@ -177,6 +194,69 @@ export default function MenuPage() {
   const orderingEnabled = restaurant?.ordering_enabled !== false
   const WAITER = { ka:'გარსონი', en:'Call waiter', tr:'Garson çağır', ru:'Официант' }
   const BILL   = { ka:'ანგარიში', en:'Bill please',  tr:'Hesap iste',  ru:'Счёт' }
+
+  // ── Splash ekranı ──
+  if (showSplash) {
+    return (
+      <div onClick={dismissSplash} style={{ position:'fixed', inset:0, zIndex:200, cursor:'pointer',
+        background: restaurant?.cover_url
+          ? `linear-gradient(rgba(0,0,0,0.35),rgba(0,0,0,0.6)), url(${restaurant.cover_url})`
+          : `linear-gradient(135deg, ${brand}, #111)`,
+        backgroundSize:'cover', backgroundPosition:'center',
+        display:'flex', alignItems:'center', justifyContent:'center', animation:'fadeIn 0.4s ease' }}>
+        <style>{`@keyframes fadeIn{from{opacity:0}to{opacity:1}} @keyframes scaleIn{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}} @keyframes pulseFade{0%,100%{opacity:.5}50%{opacity:1}}`}</style>
+        <div style={{ textAlign:'center', animation:'scaleIn 0.5s ease', padding:24 }}>
+          {restaurant?.logo_url
+            ? <img src={restaurant.logo_url} alt="" style={{ width:96, height:96, borderRadius:'50%', border:'4px solid #fff', boxShadow:'0 8px 30px rgba(0,0,0,0.4)', objectFit:'cover', marginBottom:18 }}/>
+            : <div style={{ width:96, height:96, borderRadius:'50%', background:brand, border:'4px solid #fff', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:36, fontWeight:900, margin:'0 auto 18px' }}>
+                {(n(restaurant)||'?')[0]?.toUpperCase()}
+              </div>
+          }
+          <h1 style={{ color:'#fff', fontSize:26, fontWeight:900, margin:0, textShadow:'0 2px 12px rgba(0,0,0,0.5)' }}>{n(restaurant)}</h1>
+          <p style={{ color:'rgba(255,255,255,0.75)', fontSize:12, marginTop:16, animation:'pulseFade 1.6s ease infinite' }}>
+            {lang==='tr'?'Devam etmek için dokun':lang==='ka'?'შეხებით გააგრძელეთ':lang==='ru'?'Нажмите, чтобы продолжить':'Tap to continue'}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Büyük ikonlu bölüm seçici ──
+  if (showPicker) {
+    return (
+      <div style={{ position:'fixed', inset:0, zIndex:199,
+        background: restaurant?.cover_url
+          ? `linear-gradient(rgba(0,0,0,0.55),rgba(0,0,0,0.75)), url(${restaurant.cover_url})`
+          : '#1a1a1a',
+        backgroundSize:'cover', backgroundPosition:'center',
+        display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:24, animation:'fadeIn 0.3s ease' }}>
+        <style>{`@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
+        <p style={{ color:'rgba(255,255,255,0.7)', fontSize:11.5, fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:18 }}>
+          {lang==='tr'?'Ne arıyorsun?':lang==='ka'?'რას ეძებთ?':lang==='ru'?'Что вы ищете?':'What are you looking for?'}
+        </p>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, width:'100%', maxWidth:340 }}>
+          {sections.map(sec => (
+            <button key={sec.id} onClick={() => {
+                const firstCat = categories.find(c => c.section_id === sec.id)
+                setShowPicker(false)
+                if (firstCat) setTimeout(() => selectCategory(firstCat.id), 50)
+              }}
+              style={{ background:'rgba(255,255,255,0.12)', backdropFilter:'blur(6px)', border:'1px solid rgba(255,255,255,0.22)',
+                borderRadius:18, padding:'24px 12px', display:'flex', flexDirection:'column', alignItems:'center', gap:10, cursor:'pointer' }}>
+              {sec.image_url
+                ? <img src={sec.image_url} alt="" style={{ width:36, height:36, borderRadius:10, objectFit:'cover' }}/>
+                : <span style={{ fontSize:30 }}>{sec.icon || '🍽️'}</span>}
+              <span style={{ color:'#fff', fontSize:12, fontWeight:800, textTransform:'uppercase', letterSpacing:'.03em', textAlign:'center' }}>{n(sec)}</span>
+            </button>
+          ))}
+        </div>
+        <button onClick={() => setShowPicker(false)}
+          style={{ marginTop:26, background:'none', border:'none', color:'rgba(255,255,255,0.65)', fontSize:12.5, fontWeight:600, cursor:'pointer', textDecoration:'underline' }}>
+          {lang==='tr'?'Tüm menüyü gör':lang==='ka'?'ნახეთ სრული მენიუ':lang==='ru'?'Показать всё меню':'View full menu'}
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div style={{ maxWidth:480, margin:'0 auto', background:'#f8f7f5', minHeight:'100vh', fontFamily:'"Inter",system-ui,sans-serif', position:'relative' }}>
@@ -435,12 +515,12 @@ export default function MenuPage() {
               <div key={cat.id} id={`cat-${cat.id}`} style={{ marginBottom:28 }}>
                 {/* Kategori "hero" başlığı — kapak fotoğrafı varsa onu kullan, yoksa marka rengi gradient */}
                 <div style={{ borderRadius:18, padding:'20px 18px', marginBottom:16, minHeight:96,
-                  background: cat.cover_url
-                    ? `linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.55)), url(${cat.cover_url})`
+                  background: cat.image_url
+                    ? `linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.55)), url(${cat.image_url})`
                     : `linear-gradient(135deg, ${brand}, ${brand}cc)`,
                   backgroundSize:'cover', backgroundPosition:'center',
                   position:'relative', overflow:'hidden' }}>
-                  {!cat.cover_url && (
+                  {!cat.image_url && (
                     <div style={{ position:'absolute', right:-20, top:-20, width:120, height:120, borderRadius:'50%', background:'rgba(255,255,255,0.08)' }}/>
                   )}
                   <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom: catDesc ? 8 : 4, position:'relative' }}>
@@ -448,16 +528,16 @@ export default function MenuPage() {
                       display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, backdropFilter:'blur(2px)' }}>
                       {(CAT_ICONS[cat.icon] || CAT_ICONS.default)('#fff')}
                     </div>
-                    <h2 style={{ fontSize:19, fontWeight:800, color:'#fff', margin:0, textShadow: cat.cover_url ? '0 1px 6px rgba(0,0,0,0.4)' : 'none' }}>{n(cat)}</h2>
+                    <h2 style={{ fontSize:19, fontWeight:800, color:'#fff', margin:0, textShadow: cat.image_url ? '0 1px 6px rgba(0,0,0,0.4)' : 'none' }}>{n(cat)}</h2>
                   </div>
                   {catDesc && (
                     <p style={{ fontSize:12.5, color:'rgba(255,255,255,0.92)', margin:'0 0 6px', lineHeight:1.5, position:'relative',
-                      textShadow: cat.cover_url ? '0 1px 4px rgba(0,0,0,0.4)' : 'none' }}>
+                      textShadow: cat.image_url ? '0 1px 4px rgba(0,0,0,0.4)' : 'none' }}>
                       {catDesc}
                     </p>
                   )}
                   <p style={{ fontSize:11, color:'rgba(255,255,255,0.85)', margin:0, fontWeight:600, position:'relative',
-                    textShadow: cat.cover_url ? '0 1px 4px rgba(0,0,0,0.4)' : 'none' }}>
+                    textShadow: cat.image_url ? '0 1px 4px rgba(0,0,0,0.4)' : 'none' }}>
                     {catItems.length} {lang==='tr'?'ürün':lang==='ka'?'პროდუქტი':lang==='ru'?'блюд':'items'}
                   </p>
                 </div>
@@ -627,6 +707,7 @@ export default function MenuPage() {
         selectCategory={selectCategory} n={n} t={t}
         waiterLabel={WAITER[lang]||WAITER.en} billLabel={BILL[lang]||BILL.en}
         orderingEnabled={orderingEnabled} format={format}
+        sections={sections} featuredItems={featuredItems} dispImg={item => item.image_url}
       />
 
       {/* ── ÜRÜN DETAY MODAL ── */}
@@ -763,8 +844,18 @@ function LangBtn({ lang, i18n, brand, small }) {
 }
 
 // ── BOTTOM BAR ──
-function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal, setCartOpen, categories, activeCategory, selectCategory, n, t, waiterLabel, billLabel, orderingEnabled, format }) {
+function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal, setCartOpen, categories, activeCategory, selectCategory, n, t, waiterLabel, billLabel, orderingEnabled, format, sections, featuredItems }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [expandedSecs, setExpandedSecs] = useState({})
+  const toggleSec = (id) => setExpandedSecs(p => ({ ...p, [id]: p[id] === undefined ? false : !p[id] }))
+  const isExpanded = (id) => expandedSecs[id] === undefined ? true : expandedSecs[id]
+
+  const grouped = (sections || [])
+    .map(sec => ({ section: sec, cats: categories.filter(c => c.section_id === sec.id) }))
+    .filter(g => g.cats.length > 0)
+  const groupedCatIds = new Set(grouped.flatMap(g => g.cats.map(c => c.id)))
+  const ungrouped = categories.filter(c => !groupedCatIds.has(c.id))
+  const useGroups = grouped.length > 0
 
   return (
     <>
@@ -796,23 +887,104 @@ function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal
               <span style={{ fontSize:14, fontWeight: !activeCategory?700:400, color: !activeCategory?brand:'#333' }}>Tümü</span>
               {!activeCategory && <svg style={{ marginLeft:'auto' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={brand} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>}
             </button>
-            {categories.map(cat => {
-              const isActive = activeCategory === cat.id
-              return (
-                <button key={cat.id} onClick={() => { selectCategory(cat.id); setMenuOpen(false) }}
-                  style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'12px 16px',
-                    border:'none', cursor:'pointer', borderTop:'1px solid #f8f8f8',
-                    background: isActive ? brand+'10' : '#fff',
-                    borderLeft: isActive ? `3px solid ${brand}` : '3px solid transparent' }}>
-                  <div style={{ width:36, height:36, borderRadius:10, background: isActive ? brand : '#f4f4f2',
-                    display:'flex', alignItems:'center', justifyContent:'center' }}>
-                    {(CAT_ICONS[cat.icon] || CAT_ICONS.default)(isActive ? '#fff' : brand)}
+
+            <div style={{ maxHeight:'50vh', overflowY:'auto' }}>
+            {useGroups ? (
+              <>
+                {grouped.map(({ section, cats }) => {
+                  const open = isExpanded(section.id)
+                  return (
+                    <div key={section.id}>
+                      <button onClick={() => toggleSec(section.id)}
+                        style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'12px 16px',
+                          border:'none', cursor:'pointer', background:'#fafafa', borderTop:'1px solid #f4f4f2' }}>
+                        {section.image_url
+                          ? <img src={section.image_url} alt="" style={{ width:26, height:26, borderRadius:7, objectFit:'cover', flexShrink:0 }}/>
+                          : <span style={{ fontSize:17, flexShrink:0 }}>{section.icon || '🍽️'}</span>}
+                        <span style={{ fontSize:13.5, fontWeight:800, color:'#222' }}>{n(section)}</span>
+                        <svg style={{ marginLeft:'auto', transform: open?'rotate(180deg)':'none', transition:'transform .15s' }}
+                          width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                      </button>
+                      {open && cats.map(cat => {
+                        const isActive = activeCategory === cat.id
+                        return (
+                          <button key={cat.id} onClick={() => { selectCategory(cat.id); setMenuOpen(false) }}
+                            style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'10px 16px 10px 30px',
+                              border:'none', cursor:'pointer', borderTop:'1px solid #f8f8f8',
+                              background: isActive ? brand+'10' : '#fff' }}>
+                            <span style={{ width:6, height:6, borderRadius:'50%', background: isActive?brand:'#ccc', flexShrink:0 }}/>
+                            <span style={{ fontSize:13.5, fontWeight:isActive?700:400, color:isActive?brand:'#444' }}>{n(cat)}</span>
+                            {isActive && <svg style={{ marginLeft:'auto' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={brand} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )
+                })}
+                {ungrouped.length > 0 && (
+                  <div>
+                    <div style={{ padding:'12px 16px 6px', fontSize:11, fontWeight:700, color:'#bbb', textTransform:'uppercase', letterSpacing:'.04em', borderTop:'1px solid #f4f4f2' }}>Diğer</div>
+                    {ungrouped.map(cat => {
+                      const isActive = activeCategory === cat.id
+                      return (
+                        <button key={cat.id} onClick={() => { selectCategory(cat.id); setMenuOpen(false) }}
+                          style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'10px 16px',
+                            border:'none', cursor:'pointer', background: isActive ? brand+'10' : '#fff' }}>
+                          <div style={{ width:30, height:30, borderRadius:9, background: isActive ? brand : '#f4f4f2',
+                            display:'flex', alignItems:'center', justifyContent:'center' }}>
+                            {(CAT_ICONS[cat.icon] || CAT_ICONS.default)(isActive ? '#fff' : brand)}
+                          </div>
+                          <span style={{ fontSize:13.5, fontWeight:isActive?700:400, color:isActive?brand:'#333' }}>{n(cat)}</span>
+                        </button>
+                      )
+                    })}
                   </div>
-                  <span style={{ fontSize:14, fontWeight:isActive?700:400, color:isActive?brand:'#333' }}>{n(cat)}</span>
-                  {isActive && <svg style={{ marginLeft:'auto' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={brand} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>}
-                </button>
-              )
-            })}
+                )}
+              </>
+            ) : (
+              categories.map(cat => {
+                const isActive = activeCategory === cat.id
+                return (
+                  <button key={cat.id} onClick={() => { selectCategory(cat.id); setMenuOpen(false) }}
+                    style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'12px 16px',
+                      border:'none', cursor:'pointer', borderTop:'1px solid #f8f8f8',
+                      background: isActive ? brand+'10' : '#fff',
+                      borderLeft: isActive ? `3px solid ${brand}` : '3px solid transparent' }}>
+                    <div style={{ width:36, height:36, borderRadius:10, background: isActive ? brand : '#f4f4f2',
+                      display:'flex', alignItems:'center', justifyContent:'center' }}>
+                      {(CAT_ICONS[cat.icon] || CAT_ICONS.default)(isActive ? '#fff' : brand)}
+                    </div>
+                    <span style={{ fontSize:14, fontWeight:isActive?700:400, color:isActive?brand:'#333' }}>{n(cat)}</span>
+                    {isActive && <svg style={{ marginLeft:'auto' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={brand} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>}
+                  </button>
+                )
+              })
+            )}
+            </div>
+
+            {/* Önerilen Ürünler */}
+            {featuredItems && featuredItems.length > 0 && (
+              <div style={{ borderTop:'1px solid #f4f4f2', padding:'12px 0 14px' }}>
+                <p style={{ fontSize:10.5, fontWeight:700, color:'#bbb', textTransform:'uppercase', letterSpacing:'.05em', margin:'0 16px 8px' }}>
+                  {t('featured')}
+                </p>
+                <div style={{ display:'flex', gap:10, overflowX:'auto', padding:'0 16px', scrollbarWidth:'none' }}>
+                  {featuredItems.slice(0,8).map(item => (
+                    <button key={item.id} onClick={() => { selectCategory(item.category_id); setMenuOpen(false) }}
+                      style={{ flexShrink:0, width:88, border:'none', background:'none', cursor:'pointer', padding:0, textAlign:'left' }}>
+                      <div style={{ width:88, height:64, borderRadius:12, background:'#f4f4f2', overflow:'hidden', marginBottom:5 }}>
+                        {item.image_url
+                          ? <img src={item.image_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                          : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>🍽️</div>}
+                      </div>
+                      <p style={{ fontSize:10.5, fontWeight:700, color:'#333', margin:'0 0 2px', lineHeight:1.3,
+                        display:'-webkit-box', WebkitLineClamp:1, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{n(item)}</p>
+                      <p style={{ fontSize:10.5, fontWeight:800, color:brand, margin:0 }}>{format(item.price)}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}
