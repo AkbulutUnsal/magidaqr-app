@@ -251,6 +251,74 @@ export default function AdminQR() {
     finally { setBusy('') }
   }
 
+  async function printBrandedCard() {
+    if (!restaurant) return
+    try {
+      setBusy('card')
+      const qrUrl = await dataUrlFor(targetUrl)
+      const w = window.open('', '_blank')
+      if (!w) { alert('Pop-up engellendi. Tarayıcıdan izin ver.'); setBusy(''); return }
+
+      const restName = restaurant.name_tr || restaurant.name_en || restaurant.name_ka || restaurant.slug
+      const icons = [
+        { svg: '<path d="M12 18h.01"/><rect x="5" y="2" width="14" height="20" rx="2"/>', label: 'Dijital Menü' },
+        ...(restaurant.ordering_enabled !== false ? [
+          { svg: '<path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/>', label: 'Hızlı Sipariş' },
+          { svg: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>', label: 'Garson Çağır' },
+        ] : []),
+      ]
+      const cardHTML = `
+        <div class="card">
+          <div class="top">
+            <div class="brandline"></div>
+            <div class="logo-row">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${fgColor}" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              <span class="brand-name">${restName}</span>
+            </div>
+            <h1>MENÜYE GÖZ ATIN</h1>
+            <p class="sub">Kameranızı açın, QR kodu okutun ve menümüze hemen ulaşın.</p>
+            <div class="qr-box"><img src="${qrUrl}"/></div>
+          </div>
+          <div class="bottom">
+            ${icons.map(ic => `
+              <div class="icon-col">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8">${ic.svg}</svg>
+                <span>${ic.label}</span>
+              </div>`).join('')}
+          </div>
+          <div class="footer">${window.location.origin.replace(/^https?:\/\//, '')}/menu/${restaurant.slug}</div>
+        </div>`
+
+      const count = Math.max(1, Math.min(20, adet))
+      const cards = Array.from({ length: count }).map(() => cardHTML).join('')
+
+      w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${restName} · Masa Kartı</title>
+        <style>
+          @page { margin: 10mm; }
+          * { box-sizing: border-box; }
+          body { font-family: system-ui, sans-serif; margin: 0; padding: 16px; background:#fafafa; }
+          .grid { display:grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+          .card { border-radius: 20px; overflow:hidden; page-break-inside: avoid; box-shadow: 0 2px 10px rgba(0,0,0,.08); background:#fff; }
+          .top { background: linear-gradient(180deg, #fdfaf5, #f7f0e4); text-align:center; padding: 22px 18px 26px; position:relative; }
+          .brandline { position:absolute; top:0; left:0; right:0; height:5px; background:${fgColor}; }
+          .logo-row { display:flex; align-items:center; justify-content:center; gap:7px; margin-bottom:14px; }
+          .brand-name { font-size:16px; font-weight:800; color:#222; letter-spacing:.02em; }
+          h1 { font-size:19px; font-weight:900; color:#161616; margin:0 0 6px; letter-spacing:.01em; }
+          .sub { font-size:11px; color:#8a8a86; margin:0 0 18px; line-height:1.5; max-width:220px; margin-left:auto; margin-right:auto; }
+          .qr-box { display:inline-block; background:#fff; border-radius:16px; padding:12px; box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+          .qr-box img { width:150px; height:150px; display:block; }
+          .bottom { background:#181818; display:flex; justify-content:center; gap:26px; padding:16px 10px; }
+          .icon-col { display:flex; flex-direction:column; align-items:center; gap:5px; }
+          .icon-col span { font-size:8.5px; font-weight:700; color:#eee; text-transform:uppercase; letter-spacing:.03em; text-align:center; }
+          .footer { text-align:center; font-size:9px; color:#999; background:#111; padding:7px; letter-spacing:.02em; }
+        </style></head><body><div class="grid">${cards}</div>
+        <script>window.onload=function(){setTimeout(function(){window.print()},400)}<\/script>
+        </body></html>`)
+      w.document.close()
+    } catch (err) { console.error(err); alert('Kart hazırlanamadı.') }
+    finally { setBusy('') }
+  }
+
   if (loading) return <div style={{ textAlign: 'center', padding: 64, color: '#aaa' }}>Yükleniyor...</div>
 
   const card = { background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 14, padding: 20, marginBottom: 16 }
@@ -499,6 +567,12 @@ export default function AdminQR() {
               </button>
             )}
 
+            <button onClick={printBrandedCard} disabled={!!busy}
+              style={{ width: '100%', padding: '11px 0', marginTop: 10, background: '#fff', color: '#8b5cf6', border: '1.5px solid #8b5cf6', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+              <CardPrintIcon /> {busy === 'card' ? 'Hazırlanıyor...' : `Masa Kartı Yazdır (${adet})`}
+            </button>
+            <p style={{ fontSize: 10.5, color: '#bbb', textAlign: 'center', marginTop: 6 }}>Başlık/açıklamalı, markalı masa üstü kart — yukarıdaki Adet ayarını kullanır</p>
+
             <p style={{ fontSize: 11, color: '#aaa', textAlign: 'center', marginTop: 12, lineHeight: 1.5 }}>QR'ı telefon kamerası ile test ettikten sonra bas.</p>
           </div>
         </div>
@@ -562,4 +636,7 @@ function DownloadIcon() {
 }
 function PrintIcon({ color = '#fff' }) {
   return <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></svg>
+}
+function CardPrintIcon({ color = '#8b5cf6' }) {
+  return <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><rect x="3" y="4" width="18" height="16" rx="2" /><rect x="7" y="9" width="6" height="6" rx="1" /><line x1="15" y1="10" x2="17" y2="10" /><line x1="15" y1="14" x2="17" y2="14" /></svg>
 }
