@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../hooks/useAuth'
 import { supabase } from '../../lib/supabase'
+import { getBusinessType, unit } from '../../lib/businessMode'
 
 /* ───────────────────────────────────────────────────────────
    magidaQR · Mutfak Ekranı (KDS)  ·  /admin/mutfak
@@ -56,7 +57,8 @@ export default function AdminKitchen() {
   const [muted, setMuted] = useState(false)
   const [fs, setFs] = useState(false)
   const [clock, setClock] = useState(Date.now())     // saniyelik tik → süre sayaçları
-  const [checked, setChecked] = useState(() => new Set())  // görsel ilerleme (order_item.id)
+  const [mode, setMode] = useState('restaurant')
+  const U = unit(mode, lang)  // Masa / Oda
 
   const ridRef = useRef(profile?.restaurant_id)
   const prevNewRef = useRef(null)
@@ -99,6 +101,7 @@ export default function AdminKitchen() {
   useEffect(() => {
     if (!profile?.restaurant_id) return
     loadCats(); load()
+    getBusinessType(profile.restaurant_id).then(setMode)
     const ch = supabase.channel('kds-' + profile.restaurant_id)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `restaurant_id=eq.${profile.restaurant_id}` }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, load)
@@ -126,8 +129,15 @@ export default function AdminKitchen() {
   async function advance(o) { const n = NEXT[o.status]; if (n) await supabase.from('orders').update({ status: n }).eq('id', o.id) }
   async function back(o) { const p = PREV[o.status]; if (p) await supabase.from('orders').update({ status: p }).eq('id', o.id) }
 
-  function toggleItem(id) {
-    setChecked(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s })
+  async function toggleItemReady(order, oi) {
+    const next = !oi.is_ready
+    const patch = { is_ready: next, ready_at: next ? new Date().toISOString() : null }
+    // iyimser güncelleme (anlık his) → realtime yenileyince zaten senkron olur
+    setOrders(prev => prev.map(o => o.id === order.id
+      ? { ...o, order_items: (o.order_items || []).map(x => x.id === oi.id ? { ...x, ...patch } : x) }
+      : o))
+    const { error } = await supabase.from('order_items').update(patch).eq('id', oi.id)
+    if (error) load()  // Not (reis): yetki/hata olursa gerçek durumu geri çek
   }
   function toggleFs() {
     if (document.fullscreenElement) document.exitFullscreen?.()
@@ -220,7 +230,7 @@ export default function AdminKitchen() {
                   ) : list.map(o => (
                     <Ticket
                       key={o.id} o={o} lane={lane} now={clock} items={visItems(o)}
-                      dispItem={dispItem} checked={checked} toggleItem={toggleItem}
+                      dispItem={dispItem} onToggle={toggleItemReady} unitLabel={U}
                       onAdvance={() => advance(o)} onBack={PREV[o.status] ? () => back(o) : null}
                     />
                   ))}
@@ -239,12 +249,13 @@ export default function AdminKitchen() {
 }
 
 /* ── Sipariş fişi ── */
-function Ticket({ o, lane, now, items, dispItem, checked, toggleItem, onAdvance, onBack }) {
+function Ticket({ o, lane, now, items, dispItem, onToggle, onAdvance, onBack, unitLabel = 'Masa' }) {
   const mins = Math.floor((now - new Date(o.created_at).getTime()) / 60000)
   const secs = Math.floor((now - new Date(o.created_at).getTime()) / 1000)
   const mmss = `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}`
   const timeColor = mins >= LATE_MIN ? RED : mins >= WARN_MIN ? AMBER : GREEN
-  const allDone = items.length > 0 && items.every(oi => checked.has(oi.id))
+  const readyCount = items.filter(oi => oi.is_ready).length
+  const allDone = items.length > 0 && readyCount === items.length
   const table = o.tables?.table_number ?? '—'
 
   return (
@@ -252,9 +263,10 @@ function Ticket({ o, lane, now, items, dispItem, checked, toggleItem, onAdvance,
       {/* başlık */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
         <div>
-          <p style={{ fontSize: 19, fontWeight: 900, lineHeight: 1 }}>Masa {table}</p>
+          <p style={{ fontSize: 19, fontWeight: 900, lineHeight: 1 }}>{unitLabel} {table}</p>
           <p style={{ fontSize: 11, color: '#8a97a1', marginTop: 3 }}>
-            {o.order_number ? `#${o.order_number} · ` : ''}{o.tables?.label || ''}{o.tables?.label ? ' · ' : ''}{items.length} kalem
+            {o.order_number ? `#${o.order_number} · ` : ''}{o.tables?.label ? o.tables.label + ' · ' : ''}
+            {readyCount > 0 ? <span style={{ color: GREEN, fontWeight: 700 }}>{readyCount}/{items.length} hazır</span> : `${items.length} kalem`}
           </p>
         </div>
         <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 14, fontWeight: 900, color: timeColor, background: timeColor + '18', border: `1px solid ${timeColor}44`, padding: '4px 9px', borderRadius: 9, fontVariantNumeric: 'tabular-nums' }}>
@@ -265,10 +277,10 @@ function Ticket({ o, lane, now, items, dispItem, checked, toggleItem, onAdvance,
       {/* kalemler */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: o.note ? 10 : 12 }}>
         {items.map(oi => {
-          const done = checked.has(oi.id)
+          const done = oi.is_ready
           const spicy = oi.menu_item?.is_spicy
           return (
-            <button key={oi.id} onClick={() => toggleItem(oi.id)}
+            <button key={oi.id} onClick={() => onToggle(o, oi)}
               style={{ display: 'flex', alignItems: 'flex-start', gap: 9, textAlign: 'left', background: done ? '#f2f5f4' : '#f7f9f8', border: `1px solid ${done ? '#d9e5df' : '#eef1f0'}`, borderRadius: 9, padding: '8px 9px', cursor: 'pointer', width: '100%' }}>
               <span style={{ minWidth: 26, height: 26, borderRadius: 7, background: done ? GREEN : lane.color + '1f', color: done ? '#fff' : lane.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 900, flexShrink: 0 }}>
                 {done ? '✓' : oi.quantity}

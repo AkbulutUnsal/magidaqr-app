@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../hooks/useAuth'
 import { supabase } from '../../lib/supabase'
+import { getBusinessType, unit } from '../../lib/businessMode'
 
 /* ───────────────────────────────────────────────────────────
    magidaQR · Canlı Siparişler  (sahibin kontrol kulesi · #1D9E75)
@@ -55,6 +56,9 @@ export default function AdminOrders() {
   const [newOrderTable, setNewOrderTable] = useState(null)
   const [loading, setLoading] = useState(true)
   const [pulse, setPulse] = useState(false)
+  const [mode, setMode] = useState('restaurant')
+  const U = unit(mode, lang)          // Masa / Oda
+  const Um = unit(mode, lang, 'many') // Masalar / Odalar
   const ridRef = useRef(profile?.restaurant_id)
   useEffect(() => { ridRef.current = profile?.restaurant_id }, [profile?.restaurant_id])
 
@@ -78,6 +82,7 @@ export default function AdminOrders() {
   useEffect(() => {
     if (!profile?.restaurant_id) return
     load()
+    getBusinessType(profile.restaurant_id).then(setMode)
     const ch = supabase.channel('admin-orders-' + profile.restaurant_id)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `restaurant_id=eq.${profile.restaurant_id}` }, () => { flash(); load() })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'table_calls', filter: `restaurant_id=eq.${profile.restaurant_id}` }, () => { flash(); load() })
@@ -91,7 +96,7 @@ export default function AdminOrders() {
 
   const dispItem = mi => mi?.[`name_${lang}`] || mi?.name_tr || mi?.name_en || mi?.name_ka || 'Ürün'
   async function advance(o) { const n = NEXT[o.status]; if (n) await supabase.from('orders').update({ status: n }).eq('id', o.id) }
-  async function cancel(o) { if (confirm(`Masa ${o.tables?.table_number} siparişi iptal edilsin mi?`)) await supabase.from('orders').update({ status: 'cancelled' }).eq('id', o.id) }
+  async function cancel(o) { if (confirm(`${U} ${o.tables?.table_number} siparişi iptal edilsin mi?`)) await supabase.from('orders').update({ status: 'cancelled' }).eq('id', o.id) }
   async function closeCall(c) { await supabase.from('table_calls').update({ status: 'closed' }).eq('id', c.id) }
   async function toggleItemReady(order, oi) {
     const next = !oi.is_ready
@@ -147,7 +152,7 @@ export default function AdminOrders() {
       {/* çağrılar */}
       {calls.length > 0 && (
         <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 14, padding: 16, marginBottom: 18 }}>
-          <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>🔔 Masa Çağrıları <span style={{ fontSize: 11, color: '#fff', background: RED, borderRadius: 20, padding: '1px 8px' }}>{calls.length}</span></p>
+          <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>🔔 {U} Çağrıları <span style={{ fontSize: 11, color: '#fff', background: RED, borderRadius: 20, padding: '1px 8px' }}>{calls.length}</span></p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 10 }}>
             {calls.map(c => {
               const bill = c.type === 'bill'
@@ -155,7 +160,7 @@ export default function AdminOrders() {
               return (
                 <div key={c.id} style={{ border: `1px solid ${col}`, background: col + '11', borderRadius: 12, padding: 14 }}>
                   <p style={{ fontSize: 11, fontWeight: 700, color: col, marginBottom: 2 }}>{bill ? '🧾 Hesap İsteniyor' : '🔔 Garson Çağrısı'}</p>
-                  <p style={{ fontSize: 18, fontWeight: 900, color: '#111' }}>Masa {c.tables?.table_number}{c.tables?.label && <span style={{ fontSize: 11, fontWeight: 400, color: '#aaa', marginLeft: 6 }}>{c.tables.label}</span>}</p>
+                  <p style={{ fontSize: 18, fontWeight: 900, color: '#111' }}>{U} {c.tables?.table_number}{c.tables?.label && <span style={{ fontSize: 11, fontWeight: 400, color: '#aaa', marginLeft: 6 }}>{c.tables.label}</span>}</p>
                   <p style={{ fontSize: 11, color: '#aaa', margin: '2px 0 10px' }}>{ago(c.created_at)}</p>
                   <button onClick={() => closeCall(c)} style={{ width: '100%', background: col, color: bill ? '#000' : '#fff', border: 'none', borderRadius: 8, padding: '8px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>✓ Kapat</button>
                 </div>
@@ -168,7 +173,7 @@ export default function AdminOrders() {
       {/* masa durumu · salon planı */}
       {tables.length > 0 && (
         <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 14, padding: 16, marginBottom: 18 }}>
-          <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>🪑 Masa Durumu <span style={{ fontSize: 11, color: MUTED, fontWeight: 500 }}>· canlı · masaya tıkla → detay</span></p>
+          <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>🪑 {Um} Durumu <span style={{ fontSize: 11, color: MUTED, fontWeight: 500 }}>· canlı · tıkla → detay</span></p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(78px,1fr))', gap: 8 }}>
             {floor.map(t => {
               const s = t.call === 'bill' ? { c: AMBER, t: 'Hesap' }
@@ -213,7 +218,7 @@ export default function AdminOrders() {
                     <div key={o.id} style={{ border: `1px solid ${BORDER}`, borderRadius: 11, padding: 12, background: '#fff' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                         <div>
-                          <p style={{ fontSize: 15, fontWeight: 800, color: '#111' }}>Masa {o.tables?.table_number || '—'}</p>
+                          <p style={{ fontSize: 15, fontWeight: 800, color: '#111' }}>{U} {o.tables?.table_number || '—'}</p>
                           <p style={{ fontSize: 10.5, color: '#aaa' }}>{ago(o.created_at)} · {(() => { const t = o.order_items?.length || 0; const r = o.order_items?.filter(i => i.is_ready).length || 0; return r > 0 ? `${r}/${t} hazır` : `${t} kalem` })()}</p>
                         </div>
                         <span style={{ fontSize: 13, fontWeight: 800, color: GREEN }}>{money(o.total_price)}</span>
@@ -255,6 +260,7 @@ export default function AdminOrders() {
           dispItem={dispItem}
           onAdvance={advance} onCancel={cancel} onCloseCall={closeCall} onToggleItem={toggleItemReady}
           onNewOrder={() => setNewOrderTable(tables.find(t => t.id === selTableId))}
+          unitLabel={U}
           onClose={() => setSelTableId(null)}
         />
       )}
@@ -264,6 +270,7 @@ export default function AdminOrders() {
           table={newOrderTable}
           restaurantId={profile?.restaurant_id}
           lang={lang}
+          unitLabel={U}
           onClose={() => setNewOrderTable(null)}
           onPlaced={() => { setNewOrderTable(null); load() }}
         />
@@ -284,7 +291,7 @@ function Kpi({ big, label, color = '#111', small }) {
 /* ── Masa Detay Paneli (sağdan drawer) ──
    Seçili masanın tüm aktif siparişleri + açık çağrıları.
    Sahip buradan: kalem kalem hazır işaretler, durum ilerletir, çağrı kapatır, iptal eder. */
-function TableDrawer({ table, orders, calls, dispItem, onAdvance, onCancel, onCloseCall, onToggleItem, onNewOrder, onClose }) {
+function TableDrawer({ table, orders, calls, dispItem, onAdvance, onCancel, onCloseCall, onToggleItem, onNewOrder, unitLabel = 'Masa', onClose }) {
   const total = orders.reduce((s, o) => s + Number(o.total_price || 0), 0)
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 1000, display: 'flex', justifyContent: 'flex-end' }}>
@@ -292,7 +299,7 @@ function TableDrawer({ table, orders, calls, dispItem, onAdvance, onCancel, onCl
         {/* başlık */}
         <div style={{ position: 'sticky', top: 0, background: '#fff', borderBottom: `1px solid ${BORDER}`, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 12, zIndex: 2 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 20, fontWeight: 900, color: '#111' }}>Masa {table?.table_number ?? '—'}
+            <p style={{ fontSize: 20, fontWeight: 900, color: '#111' }}>{unitLabel} {table?.table_number ?? '—'}
               {table?.label && <span style={{ fontSize: 12, fontWeight: 400, color: '#aaa', marginLeft: 8 }}>{table.label}</span>}</p>
             <p style={{ fontSize: 11.5, color: MUTED, marginTop: 2 }}>
               {orders.length} aktif sipariş{calls.length ? ` · ${calls.length} çağrı` : ''}{total ? ` · ${money(total)}` : ''}
@@ -303,7 +310,7 @@ function TableDrawer({ table, orders, calls, dispItem, onAdvance, onCancel, onCl
 
         <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
           {/* yeni sipariş */}
-          <button onClick={onNewOrder} style={{ width: '100%', background: GREEN, color: '#fff', border: 'none', borderRadius: 11, padding: '12px', fontSize: 14, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>➕ Bu masaya yeni sipariş</button>
+          <button onClick={onNewOrder} style={{ width: '100%', background: GREEN, color: '#fff', border: 'none', borderRadius: 11, padding: '12px', fontSize: 14, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>➕ Yeni Sipariş</button>
 
           {/* çağrılar */}
           {calls.map(c => {
@@ -324,7 +331,7 @@ function TableDrawer({ table, orders, calls, dispItem, onAdvance, onCancel, onCl
           {orders.length === 0 && calls.length === 0 && (
             <div style={{ textAlign: 'center', padding: '52px 20px', color: '#bbb' }}>
               <p style={{ fontSize: 34, marginBottom: 8 }}>🍽️</p>
-              <p style={{ fontSize: 14, fontWeight: 600, color: '#999' }}>Bu masada aktif sipariş yok</p>
+              <p style={{ fontSize: 14, fontWeight: 600, color: '#999' }}>Bu {unitLabel.toLocaleLowerCase('tr')} için aktif sipariş yok</p>
             </div>
           )}
 
@@ -381,7 +388,7 @@ function TableDrawer({ table, orders, calls, dispItem, onAdvance, onCancel, onCl
    Sahip masaya elle sipariş girer. MenuPage ile birebir aynı insert:
    orders({restaurant_id,table_id,note,total_price,lang}) + order_items({order_id,menu_item_id,quantity,unit_price}).
    status/order_number DB default'undan gelir. Not (reis). */
-function NewOrderModal({ table, restaurantId, lang, onClose, onPlaced }) {
+function NewOrderModal({ table, restaurantId, lang, unitLabel = 'Masa', onClose, onPlaced }) {
   const [cats, setCats] = useState([])
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -457,7 +464,7 @@ function NewOrderModal({ table, restaurantId, lang, onClose, onPlaced }) {
         <div style={{ padding: '15px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ fontSize: 17, fontWeight: 900, color: '#111' }}>🍽️ Yeni Sipariş</p>
-            <p style={{ fontSize: 12, color: MUTED, marginTop: 1 }}>Masa {table?.table_number}{table?.label ? ` · ${table.label}` : ''}</p>
+            <p style={{ fontSize: 12, color: MUTED, marginTop: 1 }}>{unitLabel} {table?.table_number}{table?.label ? ` · ${table.label}` : ''}</p>
           </div>
           <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: 9, border: `1px solid ${BORDER}`, background: '#fff', fontSize: 17, color: '#666', cursor: 'pointer' }}>✕</button>
         </div>

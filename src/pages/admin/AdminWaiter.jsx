@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../hooks/useAuth'
 import { supabase } from '../../lib/supabase'
+import { getBusinessType, unit } from '../../lib/businessMode'
 
 /* ───────────────────────────────────────────────────────────
    magidaQR · Garson Paneli  ·  /admin/garson
@@ -43,6 +44,9 @@ export default function AdminWaiter() {
   const [tables, setTables] = useState([])
   const [loading, setLoading] = useState(true)
   const [muted, setMuted] = useState(false)
+  const [mode, setMode] = useState('restaurant')
+  const U = unit(mode, lang)          // Masa / Oda
+  const Um = unit(mode, lang, 'many') // Masalar / Odalar
 
   const ridRef = useRef(profile?.restaurant_id)
   const prevCallsRef = useRef(null)
@@ -77,6 +81,7 @@ export default function AdminWaiter() {
   useEffect(() => {
     if (!profile?.restaurant_id) return
     loadTables(); load()
+    getBusinessType(profile.restaurant_id).then(setMode)
     const ch = supabase.channel('waiter-' + profile.restaurant_id)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `restaurant_id=eq.${profile.restaurant_id}` }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'table_calls', filter: `restaurant_id=eq.${profile.restaurant_id}` }, load)
@@ -122,7 +127,7 @@ export default function AdminWaiter() {
   const tabs = [
     { key: 'calls', label: 'Çağrılar', icon: '🔔', badge: calls.length, badgeColor: RED },
     { key: 'serve', label: 'Servis', icon: '🍽️', badge: ready.length, badgeColor: GREEN },
-    { key: 'tables', label: 'Masalar', icon: '🪑', badge: 0 },
+    { key: 'tables', label: Um, icon: '🪑', badge: 0 },
   ]
 
   return (
@@ -155,19 +160,19 @@ export default function AdminWaiter() {
       {loading ? (
         <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 14, padding: 50, textAlign: 'center', color: '#bbb' }}>Yükleniyor…</div>
       ) : tab === 'calls' ? (
-        <CallsTab calls={calls} closeCall={closeCall} />
+        <CallsTab calls={calls} closeCall={closeCall} unitLabel={U} />
       ) : tab === 'serve' ? (
-        <ServeTab ready={ready} preparing={preparing} dispItem={dispItem} serve={serve} />
+        <ServeTab ready={ready} preparing={preparing} dispItem={dispItem} serve={serve} unitLabel={U} />
       ) : (
-        <TablesTab list={tableState} />
+        <TablesTab list={tableState} unitLabel={U} unitPlural={Um} />
       )}
     </div>
   )
 }
 
 /* ── Çağrılar ── */
-function CallsTab({ calls, closeCall }) {
-  if (calls.length === 0) return <Empty icon="🔔" title="Açık çağrı yok" sub="Masalardan çağrı geldiğinde burada belirir." />
+function CallsTab({ calls, closeCall, unitLabel = 'Masa' }) {
+  if (calls.length === 0) return <Empty icon="🔔" title="Açık çağrı yok" sub={`${unitLabel === 'Oda' ? 'Odalardan' : 'Masalardan'} çağrı geldiğinde burada belirir.`} />
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {calls.map(c => {
@@ -177,7 +182,7 @@ function CallsTab({ calls, closeCall }) {
             <span style={{ fontSize: 30 }}>{v.icon}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: 12, fontWeight: 700, color: v.color }}>{v.label}</p>
-              <p style={{ fontSize: 20, fontWeight: 900, color: '#111' }}>Masa {c.tables?.table_number ?? '—'}
+              <p style={{ fontSize: 20, fontWeight: 900, color: '#111' }}>{unitLabel} {c.tables?.table_number ?? '—'}
                 {c.tables?.label && <span style={{ fontSize: 12, fontWeight: 400, color: '#aaa', marginLeft: 7 }}>{c.tables.label}</span>}
               </p>
               <p style={{ fontSize: 11.5, color: '#aaa', marginTop: 1 }}>{ago(c.created_at)}</p>
@@ -192,7 +197,7 @@ function CallsTab({ calls, closeCall }) {
 }
 
 /* ── Servis ── */
-function ServeTab({ ready, preparing, dispItem, serve }) {
+function ServeTab({ ready, preparing, dispItem, serve, unitLabel = 'Masa' }) {
   return (
     <div>
       {ready.length === 0 ? (
@@ -204,7 +209,7 @@ function ServeTab({ ready, preparing, dispItem, serve }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                 <div>
                   <p style={{ fontSize: 11, fontWeight: 800, color: GREEN }}>✓ HAZIR · SERVİSE GÖTÜR</p>
-                  <p style={{ fontSize: 20, fontWeight: 900, color: '#111' }}>Masa {o.tables?.table_number ?? '—'}
+                  <p style={{ fontSize: 20, fontWeight: 900, color: '#111' }}>{unitLabel} {o.tables?.table_number ?? '—'}
                     {o.tables?.label && <span style={{ fontSize: 12, fontWeight: 400, color: '#aaa', marginLeft: 7 }}>{o.tables.label}</span>}
                   </p>
                   <p style={{ fontSize: 11, color: '#aaa', marginTop: 1 }}>{o.order_number ? `#${o.order_number} · ` : ''}{ago(o.created_at)}</p>
@@ -234,7 +239,7 @@ function ServeTab({ ready, preparing, dispItem, serve }) {
             {preparing.map(o => (
               <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fafafa', border: `1px solid ${BORDER}`, borderRadius: 11, padding: '10px 13px' }}>
                 <span style={{ width: 9, height: 9, borderRadius: '50%', background: o.status === 'preparing' ? VIOLET : AMBER, flexShrink: 0 }} />
-                <span style={{ fontSize: 14, fontWeight: 700, color: '#333' }}>Masa {o.tables?.table_number ?? '—'}</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: '#333' }}>{unitLabel} {o.tables?.table_number ?? '—'}</span>
                 <span style={{ fontSize: 12, color: '#aaa' }}>{o.order_items?.length || 0} kalem</span>
                 <span style={{ marginLeft: 'auto', fontSize: 11.5, color: o.status === 'preparing' ? VIOLET : AMBER, fontWeight: 700 }}>
                   {o.status === 'preparing' ? 'Hazırlanıyor' : 'Bekliyor'}
@@ -249,8 +254,8 @@ function ServeTab({ ready, preparing, dispItem, serve }) {
 }
 
 /* ── Masalar ── */
-function TablesTab({ list }) {
-  if (list.length === 0) return <Empty icon="🪑" title="Masa bulunamadı" sub="Masalar sayfasından masa eklediğinde burada görünür." />
+function TablesTab({ list, unitLabel = 'Masa', unitPlural = 'Masalar' }) {
+  if (list.length === 0) return <Empty icon="🪑" title={`${unitLabel} bulunamadı`} sub={`${unitPlural} sayfasından ${unitLabel.toLocaleLowerCase('tr')} eklediğinde burada görünür.`} />
   const stateOf = t => {
     if (t.call === 'bill') return { c: AMBER, t: '🧾 Hesap', bg: '#fffbeb' }
     if (t.call === 'waiter') return { c: RED, t: '🔔 Çağrı', bg: '#fef2f2' }
