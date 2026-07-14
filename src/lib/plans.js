@@ -18,7 +18,6 @@ export const PLANS = {
       'Sınırsız ürün & kategori',
       '4 dil desteği (KA/EN/TR/RU)',
       'QR Stüdyo + masa yönetimi',
-      'Garson & Mutfak paneli',
       'Kampanyalar + Hero kartları',
       'Alerjen & beslenme etiketleri',
       'Anket & geri bildirim',
@@ -39,6 +38,8 @@ export const PLANS = {
     maxOutlets: Infinity,
     features: [
       'Temel paketin tüm özellikleri',
+      'Garson & Mutfak paneli (canlı sipariş)',
+      'Otel modu (oda servisi)',
       'Sınırsız outlet (şube)',
       'Outlet bazlı fiyatlandırma',
       'Outlet bazlı branding',
@@ -61,6 +62,21 @@ export const AI_ADDON = {
   ],
 }
 
+// ─────────────────────────────────────────────────────────
+// Özellik → gerekli minimum plan (KİLİT mantığı buradan okunur)
+// Sadece burada listelenen özellikler kısıtlıdır; listede olmayan = herkese açık.
+// ─────────────────────────────────────────────────────────
+export const FEATURE_MIN_PLAN = {
+  kitchen: 'advanced',   // Mutfak paneli → Temel'de KİLİTLİ
+  waiter: 'advanced',    // Garson paneli → Temel'de KİLİTLİ
+  hotelMode: 'advanced', // Otel modu → Gelişmiş
+  outletPricing: 'advanced',
+  outletBranding: 'advanced',
+  // orders: burada YOK → Siparişler her planda açık. Kısıtlamak istersen 'advanced' ekle.
+}
+
+const PLAN_RANK = { basic: 1, advanced: 2 }
+
 // Yardımcılar
 export function getPlan(key) {
   return PLANS[key] || PLANS.basic
@@ -73,4 +89,11 @@ export function canAddOutlet(planKey, currentCount) {
 
 export function hasAI(tenant) {
   return !!tenant?.ai_addon
+}
+
+// Bir plan, bir özelliğe erişebiliyor mu? (kilit için)
+export function planAllows(planKey, feature) {
+  const need = FEATURE_MIN_PLAN[feature]
+  if (!need) return true // kısıtlı değil
+  return (PLAN_RANK[planKey] || 0) >= (PLAN_RANK[need] || 0)
 }
