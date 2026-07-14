@@ -397,21 +397,33 @@ function NewOrderModal({ table, restaurantId, lang, unitLabel = 'Masa', onClose,
   const [cart, setCart] = useState([])
   const [note, setNote] = useState('')
   const [placing, setPlacing] = useState(false)
+  const [customers, setCustomers] = useState([])
+  const [custQuery, setCustQuery] = useState('')
+  const [selCust, setSelCust] = useState(null)
 
   useEffect(() => {
     let alive = true
     ;(async () => {
-      const [{ data: c }, { data: it }] = await Promise.all([
+      const [{ data: c }, { data: it }, { data: cust }] = await Promise.all([
         supabase.from('menu_categories').select('id,name_tr,name_en,name_ka,name_ru,icon,sort_order,is_active').eq('restaurant_id', restaurantId).order('sort_order', { ascending: true }),
         supabase.from('menu_items').select('id,name_tr,name_en,name_ka,name_ru,price,category_id,is_available,is_sold_out,sort_order').eq('restaurant_id', restaurantId).order('sort_order', { ascending: true }),
+        supabase.from('customers').select('id,name,phone,points,stamps').eq('restaurant_id', restaurantId).order('last_visit', { ascending: false, nullsFirst: false }),
       ])
       if (!alive) return
       setCats((c || []).filter(x => x.is_active !== false))
       setItems(it || [])
+      setCustomers(cust || [])
       setLoading(false)
     })()
     return () => { alive = false }
   }, [restaurantId])
+
+  const custMatches = useMemo(() => {
+    const q = custQuery.trim().toLocaleLowerCase('tr')
+    if (!q) return []
+    return customers.filter(c =>
+      (c.name || '').toLocaleLowerCase('tr').includes(q) || (c.phone || '').includes(q)).slice(0, 6)
+  }, [customers, custQuery])
 
   const dispItem = i => i?.[`name_${lang}`] || i?.name_tr || i?.name_en || i?.name_ka || 'Ürün'
   const dispCat = c => c?.[`name_${lang}`] || c?.name_tr || c?.name_en || c?.name_ka || 'Kategori'
@@ -446,7 +458,7 @@ function NewOrderModal({ table, restaurantId, lang, unitLabel = 'Masa', onClose,
     if (placing || cart.length === 0) return
     setPlacing(true)
     const { data: order, error } = await supabase.from('orders')
-      .insert({ restaurant_id: restaurantId, table_id: table.id, note: note.trim() || null, total_price: total, lang })
+      .insert({ restaurant_id: restaurantId, table_id: table.id, note: note.trim() || null, total_price: total, lang, customer_id: selCust?.id || null })
       .select().single()
     if (error || !order) { setPlacing(false); return alert('Sipariş oluşturulamadı' + (error ? ': ' + error.message : '')) }
     const { error: e2 } = await supabase.from('order_items').insert(
@@ -511,6 +523,39 @@ function NewOrderModal({ table, restaurantId, lang, unitLabel = 'Masa', onClose,
 
         {/* sepet + oluştur */}
         <div style={{ borderTop: `1px solid ${BORDER}`, padding: 14, background: '#fafafa' }}>
+          {/* müşteri (sadakat) */}
+          <div style={{ position: 'relative', marginBottom: 10 }}>
+            {selCust ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: GREEN_BG, border: `1px solid ${GREEN}`, borderRadius: 10, padding: '9px 12px' }}>
+                <span style={{ fontSize: 16 }}>👤</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#0f5c40', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selCust.name || selCust.phone || 'Müşteri'}</p>
+                  <p style={{ fontSize: 11, color: '#3a8f6d' }}>{Number(selCust.points || 0)} puan · {Number(selCust.stamps || 0)} damga</p>
+                </div>
+                <button onClick={() => { setSelCust(null); setCustQuery('') }} title="Kaldır" style={{ background: 'none', border: 'none', color: '#3a8f6d', fontSize: 15, cursor: 'pointer' }}>✕</button>
+              </div>
+            ) : (
+              <>
+                <input value={custQuery} onChange={e => setCustQuery(e.target.value)} placeholder="👤 Müşteri bağla (sadakat) — isim/telefon ara…"
+                  style={{ width: '100%', boxSizing: 'border-box', border: `1px solid ${BORDER}`, borderRadius: 10, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+                {custMatches.length > 0 && (
+                  <div style={{ position: 'absolute', bottom: '100%', left: 0, right: 0, marginBottom: 6, background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 10, boxShadow: '0 6px 20px rgba(0,0,0,.12)', overflow: 'hidden', zIndex: 5 }}>
+                    {custMatches.map(c => (
+                      <button key={c.id} onClick={() => { setSelCust(c); setCustQuery('') }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', background: '#fff', border: 'none', borderBottom: '1px solid #f2f2f0', padding: '9px 12px', cursor: 'pointer' }}>
+                        <span style={{ width: 28, height: 28, borderRadius: '50%', background: GREEN_BG, color: GREEN, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, flexShrink: 0 }}>{(c.name || '?')[0].toLocaleUpperCase('tr')}</span>
+                        <span style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#222', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name || 'İsimsiz'}</span>
+                          <span style={{ display: 'block', fontSize: 11, color: '#aaa' }}>{c.phone || ''} · {Number(c.points || 0)} puan</span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
           {cart.length === 0 ? (
             <p style={{ fontSize: 12.5, color: MUTED, textAlign: 'center', padding: '6px 0' }}>Menüden ürün ekleyin</p>
           ) : (
