@@ -11,6 +11,7 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminOrders    from './pages/admin/AdminOrders'
 import AdminKitchen   from './pages/admin/AdminKitchen'
 import AdminWaiter    from './pages/admin/AdminWaiter'
+import AdminCRM       from './pages/admin/AdminCRM'
 import AdminMenu      from './pages/admin/AdminMenu'
 import AdminCategories from './pages/admin/AdminCategories'
 import AdminSections   from './pages/admin/AdminSections'
@@ -38,7 +39,6 @@ import SuperDashboard from './pages/super/SuperDashboard'
 import SuperPlans     from './pages/super/SuperPlans'
 import SuperStats     from './pages/super/SuperStats'
 import LoginPage      from './pages/auth/LoginPage'
-import ResetPasswordPage from './pages/auth/ResetPasswordPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 export default function App() {
@@ -52,7 +52,6 @@ export default function App() {
 
         {/* Auth */}
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         {/* Mutfak (personel cihazı - ayrı giriş) */}
         <Route path="/kitchen" element={
@@ -82,6 +81,7 @@ export default function App() {
           <Route path="reports"    element={<AdminReports />} />
           <Route path="settings"   element={<AdminSettings />} />
           <Route path="staff"      element={<AdminStaff />} />
+          <Route path="crm"        element={<AdminCRM />} />
           <Route path="analytics"  element={<AdminAnalytics />} />
           <Route path="qr"         element={<AdminQR />} />
           <Route path="orders"     element={<AdminOrders />} />
