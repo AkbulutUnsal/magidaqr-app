@@ -1,9 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../hooks/useAuth'
-import { supabase } from '../../lib/supabase'
-import { setManualLanguage } from '../../i18n/langPreference'
 import AdminFooter from '../../components/AdminFooter'
 
 // ── Icons ──
@@ -34,81 +31,58 @@ const CogIcon     = ()=><svg width={16} height={16} viewBox="0 0 24 24" fill="no
 const ShieldIcon  = ()=><svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
 const ChefIcon    = ()=><svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6z"/><line x1="6" y1="17" x2="18" y2="17"/></svg>
 const BellIcon    = ()=><svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-const LockIcon    = ()=><svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+const UserIcon    = ()=><svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+const ArchiveIcon = ()=><svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
 
 // ── Nav structure ──
 const NAV = [
-  { sectionKey: null, items: [
-    { to:'/admin',             labelKey:'dashboard',         Icon:HomeIcon,     end:true },
-    { to:'/admin/analytics',   labelKey:'nav_analytics',     Icon:ChartIcon, restricted:true },
-    { to:'/admin/orders',      labelKey:'orders',            Icon:ReceiptIcon, dot:true, restricted:true },
-    { to:'/admin/mutfak',      labelKey:'nav_kitchen',       Icon:ChefIcon, dot:true, restricted:true },
-    { to:'/admin/garson',      labelKey:'nav_waiter',        Icon:BellIcon, dot:true, restricted:true },
-    { to:'/admin/qr',          labelKey:'nav_qr_studio',     Icon:QrIcon },
-    { to:'/admin/ai',          labelKey:'nav_ai_assistant',  Icon:AIIcon, dot:true, restricted:true },
+  { section: null, items: [
+    { to:'/admin',             label:'Dashboard',       Icon:HomeIcon,     end:true },
+    { to:'/admin/analytics',   label:'Analitik',        Icon:ChartIcon },
+    { to:'/admin/orders',      label:'Siparişler',      Icon:ReceiptIcon, dot:true },
+    { to:'/admin/mutfak',      label:'Mutfak',          Icon:ChefIcon, dot:true },
+    { to:'/admin/garson',      label:'Garson',          Icon:BellIcon, dot:true },
+    { to:'/admin/qr',          label:'QR Stüdyo',       Icon:QrIcon },
+    { to:'/admin/ai',          label:'AI Asistan',      Icon:AIIcon, dot:true },
   ]},
-  { sectionKey:'section_menu_content', items: [
-    { to:'/admin/hero-cards',  labelKey:'nav_hero_cards',    Icon:CardIcon, restricted:true },
-    { to:'/admin/sections',    labelKey:'nav_sections',      Icon:GridIcon, restricted:true },
-    { to:'/admin/categories',  labelKey:'categories',        Icon:FolderIcon },
-    { to:'/admin/menu',        labelKey:'items',             Icon:DishIcon },
-    { to:'/admin/bulk-price',  labelKey:'nav_bulk_price',    Icon:TagIcon, restricted:true },
-    { to:'/admin/import',      labelKey:'nav_import_export', Icon:UploadIcon, restricted:true },
+  { section:'MENÜ İÇERİK', items: [
+    { to:'/admin/hero-cards',  label:'Ana Sayfa Kartları', Icon:CardIcon },
+    { to:'/admin/sections',    label:'Bölümler',         Icon:GridIcon },
+    { to:'/admin/categories',  label:'Kategoriler',      Icon:FolderIcon },
+    { to:'/admin/menu',        label:'Ürünler',          Icon:DishIcon },
+    { to:'/admin/bulk-price',  label:'Toplu Fiyat',      Icon:TagIcon },
+    { to:'/admin/import',      label:'Import / Export',  Icon:UploadIcon },
   ]},
-  { sectionKey:'section_configuration', items: [
-    { to:'/admin/outlets',     labelKey:'nav_outlets',       Icon:MapPinIcon, restricted:true },
-    { to:'/admin/delivery',    labelKey:'nav_delivery',      Icon:PackageIcon, restricted:true },
-    { to:'/admin/languages',   labelKey:'nav_languages',     Icon:GlobeIcon, restricted:true },
-    { to:'/admin/allergens',   labelKey:'nav_allergens',     Icon:AlertIcon },
+  { section:'YAPILANDIRMA', items: [
+    { to:'/admin/outlets',     label:'Outletler',        Icon:MapPinIcon },
+    { to:'/admin/delivery',    label:'Paket Servisi',    Icon:PackageIcon },
+    { to:'/admin/languages',   label:'Diller & Çeviriler',Icon:GlobeIcon },
+    { to:'/admin/allergens',   label:'Alerjenler',       Icon:AlertIcon },
   ]},
-  { sectionKey:'section_marketing', items: [
-    { to:'/admin/media',       labelKey:'nav_media',         Icon:ImageIcon, restricted:true },
-    { to:'/admin/social',      labelKey:'nav_social',        Icon:ShareIcon, restricted:true },
-    { to:'/admin/info-pages',  labelKey:'nav_info_pages',    Icon:InfoIcon, restricted:true },
-    { to:'/admin/campaigns',   labelKey:'nav_campaigns',     Icon:MegaphoneIcon, restricted:true },
-    { to:'/admin/survey',      labelKey:'nav_survey',        Icon:ClipboardIcon, restricted:true },
+  { section:'PAZARLAMA', items: [
+    { to:'/admin/media',       label:'Medya',            Icon:ImageIcon },
+    { to:'/admin/social',      label:'Sosyal Medya',     Icon:ShareIcon },
+    { to:'/admin/info-pages',  label:'Bilgi Sayfaları',  Icon:InfoIcon },
+    { to:'/admin/campaigns',   label:'Kampanyalar',      Icon:MegaphoneIcon },
+    { to:'/admin/survey',      label:'Anket',            Icon:ClipboardIcon },
   ]},
-  { sectionKey:'section_management', items: [
-    { to:'/admin/tables',      labelKey:'tables',            Icon:TableIcon },
-    { to:'/admin/staff',       labelKey:'staff',             Icon:UsersIcon, restricted:true },
-    { to:'/admin/reports',     labelKey:'reports',           Icon:ReportIcon, restricted:true },
-    { to:'/admin/settings',    labelKey:'settings',          Icon:CogIcon },
+  { section:'YÖNETİM', items: [
+    { to:'/admin/tables',      label:'Masalar',          Icon:TableIcon },
+    { to:'/admin/staff',       label:'Personel',         Icon:UsersIcon },
+    { to:'/admin/crm',         label:'Müşteriler',       Icon:UserIcon },
+    { to:'/admin/stok',        label:'Stok',             Icon:ArchiveIcon },
+    { to:'/admin/reports',     label:'Raporlar',         Icon:ReportIcon },
+    { to:'/admin/settings',    label:'Ayarlar',          Icon:CogIcon },
   ]},
 ]
 
 export default function AdminLayout() {
   const { profile, signOut } = useAuth()
   const navigate = useNavigate()
-  const { t, i18n } = useTranslation()
   const [mini, setMini] = useState(false)
-  const [menuUrl, setMenuUrl] = useState(null)
-  const [tenantPlan, setTenantPlan] = useState(null)
-  const [lockMsg, setLockMsg] = useState(null)
-
-  useEffect(() => {
-    if (!profile?.restaurant_id) return
-    let active = true
-    ;(async () => {
-      const [{ data: rest }, { data: tbl }] = await Promise.all([
-        supabase.from('restaurants').select('slug, plan').eq('id', profile.restaurant_id).single(),
-        supabase.from('tables').select('id').eq('restaurant_id', profile.restaurant_id).order('table_number').limit(1),
-      ])
-      if (!active) return
-      if (rest?.slug && tbl?.[0]?.id) setMenuUrl(`/menu/${rest.slug}/${tbl[0].id}`)
-      setTenantPlan(rest?.plan || null)
-    })()
-    return () => { active = false }
-  }, [profile?.restaurant_id])
-
-  function showLockMsg() {
-    setLockMsg(t('feature_locked_msg'))
-    clearTimeout(showLockMsg._t)
-    showLockMsg._t = setTimeout(() => setLockMsg(null), 3200)
-  }
 
   const out = async () => { await signOut(); navigate('/login') }
   const isSA = profile?.role === 'super_admin'
-  const isLocked = (item) => item.restricted && tenantPlan === 'basic' && !isSA
 
   return (
     <div style={{display:'flex',height:'100vh',background:'#f5f5f3',fontFamily:'Inter,system-ui,sans-serif',fontSize:14}}>
@@ -134,55 +108,32 @@ export default function AdminLayout() {
         <nav style={{flex:1,overflowY:'auto',padding:'8px 6px'}}>
           {NAV.map((g,gi)=>(
             <div key={gi} style={{marginBottom:14}}>
-              {g.sectionKey && !mini && (
+              {g.section && !mini && (
                 <p style={{fontSize:10,fontWeight:700,color:'#bbb',letterSpacing:'0.07em',textTransform:'uppercase',padding:'0 6px',marginBottom:3}}>
-                  {t(g.sectionKey)}
+                  {g.section}
                 </p>
               )}
-              {g.items.map(item=>{
-                const locked = isLocked(item)
-                if (locked) {
-                  return (
-                    <button key={item.to} onClick={showLockMsg}
-                      title={mini ? t(item.labelKey) : undefined}
-                      className="nl"
-                      style={{justifyContent:mini?'center':'flex-start', opacity:.45, cursor:'pointer', background:'none', border:'none', width:'100%', textAlign:'left'}}>
-                      <item.Icon />
-                      {!mini && <span style={{flex:1}}>{t(item.labelKey)}</span>}
-                      {!mini && <LockIcon />}
-                    </button>
-                  )
-                }
-                return (
-                  <NavLink key={item.to} to={item.to} end={item.end}
-                    title={mini ? t(item.labelKey) : undefined}
-                    className={({isActive})=>`nl${isActive?' on':''}`}
-                    style={{justifyContent:mini?'center':'flex-start'}}>
-                    <item.Icon />
-                    {!mini && <span style={{flex:1}}>{t(item.labelKey)}</span>}
-                    {!mini && item.dot && <span style={{width:7,height:7,borderRadius:'50%',background:'#1D9E75',flexShrink:0}}/>}
-                  </NavLink>
-                )
-              })}
+              {g.items.map(item=>(
+                <NavLink key={item.to} to={item.to} end={item.end}
+                  title={mini ? item.label : undefined}
+                  className={({isActive})=>`nl${isActive?' on':''}`}
+                  style={{justifyContent:mini?'center':'flex-start'}}>
+                  <item.Icon />
+                  {!mini && <span style={{flex:1}}>{item.label}</span>}
+                  {!mini && item.dot && <span style={{width:7,height:7,borderRadius:'50%',background:'#1D9E75',flexShrink:0}}/>}
+                </NavLink>
+              ))}
             </div>
           ))}
 
-          {lockMsg && (
-            <div style={{position:'fixed',bottom:70,left:'50%',transform:'translateX(-50%)',background:'#111',color:'#fff',
-              borderRadius:12,padding:'10px 18px',fontSize:12.5,fontWeight:600,boxShadow:'0 8px 30px rgba(0,0,0,.3)',
-              zIndex:200,whiteSpace:'nowrap'}}>
-              🔒 {lockMsg}
-            </div>
-          )}
-
           {isSA && (
             <div style={{marginBottom:14}}>
-              {!mini && <p style={{fontSize:10,fontWeight:700,color:'#bbb',letterSpacing:'0.07em',textTransform:'uppercase',padding:'0 6px',marginBottom:3}}>{t('section_super_admin')}</p>}
-              <NavLink to="/super" title={mini?t('nav_company_management'):undefined}
+              {!mini && <p style={{fontSize:10,fontWeight:700,color:'#bbb',letterSpacing:'0.07em',textTransform:'uppercase',padding:'0 6px',marginBottom:3}}>SUPER ADMIN</p>}
+              <NavLink to="/super" title={mini?'Firmalar':undefined}
                 className={({isActive})=>`nl${isActive?' on':''}`}
                 style={{justifyContent:mini?'center':'flex-start'}}>
                 <ShieldIcon />
-                {!mini && t('nav_company_management')}
+                {!mini && 'Firma Yönetimi'}
               </NavLink>
             </div>
           )}
@@ -199,7 +150,7 @@ export default function AdminLayout() {
                 <p style={{fontSize:11,fontWeight:600,color:'#111',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{profile?.full_name||'Admin'}</p>
                 <p style={{fontSize:9,color:'#aaa'}}>{profile?.role}</p>
               </div>
-              <button onClick={out} title={t('logout')} style={{background:'none',border:'none',cursor:'pointer',color:'#ccc',padding:2,flexShrink:0}}>
+              <button onClick={out} title="Çıkış" style={{background:'none',border:'none',cursor:'pointer',color:'#ccc',padding:2,flexShrink:0}}>
                 <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
                 </svg>
@@ -215,25 +166,14 @@ export default function AdminLayout() {
         <header style={{background:'#fff',borderBottom:'1px solid #e8e8e4',padding:'0 24px',height:52,display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
           <div style={{background:'#f5f5f3',border:'1px solid #e8e8e4',borderRadius:8,padding:'6px 14px',display:'flex',alignItems:'center',gap:8,width:200,cursor:'text'}}>
             <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <span style={{fontSize:12,color:'#bbb'}}>{t('quick_search')}</span>
+            <span style={{fontSize:12,color:'#bbb'}}>Hızlı ara...</span>
             <span style={{marginLeft:'auto',fontSize:9,color:'#ccc',background:'#eee',padding:'1px 4px',borderRadius:4}}>⌘K</span>
           </div>
-          <div style={{display:'flex',alignItems:'center',gap:10}}>
-            <AdminLangSwitcher i18n={i18n} />
-            {menuUrl ? (
-              <a href={menuUrl} target="_blank"
-                style={{display:'flex',alignItems:'center',gap:6,padding:'6px 14px',background:'#1D9E75',color:'#fff',borderRadius:8,fontSize:12,fontWeight:600,textDecoration:'none'}}>
-                <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                {t('view_menu')}
-              </a>
-            ) : (
-              <span title={profile?.role === 'super_admin' ? undefined : 'Önce bir masa ekleyin'}
-                style={{display:'flex',alignItems:'center',gap:6,padding:'6px 14px',background:'#e8e8e4',color:'#aaa',borderRadius:8,fontSize:12,fontWeight:600}}>
-                <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                {t('view_menu')}
-              </span>
-            )}
-          </div>
+          <a href="/menu/main/c4efa2ba-fc1c-43e5-980b-b57257b27147" target="_blank"
+            style={{display:'flex',alignItems:'center',gap:6,padding:'6px 14px',background:'#1D9E75',color:'#fff',borderRadius:8,fontSize:12,fontWeight:600,textDecoration:'none'}}>
+            <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Menüyü Gör
+          </a>
         </header>
         <main style={{flex:1,overflowY:'auto',padding:'20px',display:'flex',flexDirection:'column'}}>
           <div style={{flex:1}}>
@@ -242,47 +182,6 @@ export default function AdminLayout() {
           <AdminFooter />
         </main>
       </div>
-    </div>
-  )
-}
-
-// ── Admin dil switcher ──
-function AdminLangSwitcher({ i18n }) {
-  const [open, setOpen] = useState(false)
-  const LANGS = [
-    { code:'tr', img:'https://flagcdn.com/w40/tr.png', label:'Türkçe' },
-    { code:'en', img:'https://flagcdn.com/w40/gb.png', label:'English' },
-    { code:'ka', img:'https://flagcdn.com/w40/ge.png', label:'ქართული' },
-    { code:'ru', img:'https://flagcdn.com/w40/ru.png', label:'Русский' },
-  ]
-  const cur = LANGS.find(l => l.code === i18n.language) || LANGS[0]
-
-  return (
-    <div style={{ position:'relative' }}>
-      <button onClick={() => setOpen(o => !o)}
-        style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 10px', background:'#f5f5f3',
-          border:'1px solid #e8e8e4', borderRadius:8, cursor:'pointer' }}>
-        <img src={cur.img} alt={cur.code} style={{ width:18, height:13, objectFit:'cover', borderRadius:2 }} />
-        <span style={{ fontSize:12, fontWeight:600, color:'#444' }}>{cur.code.toUpperCase()}</span>
-        <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      {open && (
-        <>
-          <div onClick={() => setOpen(false)} style={{ position:'fixed', inset:0, zIndex:90 }} />
-          <div style={{ position:'absolute', right:0, top:36, background:'#fff', border:'1px solid #e8e8e4',
-            borderRadius:10, boxShadow:'0 8px 28px rgba(0,0,0,.12)', overflow:'hidden', zIndex:91, minWidth:145 }}>
-            {LANGS.map(({ code, img, label }) => (
-              <button key={code} onClick={() => { setManualLanguage(i18n, code); setOpen(false) }}
-                style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'9px 12px',
-                  border:'none', cursor:'pointer', background: i18n.language===code ? '#e8f5ee' : '#fff' }}>
-                <img src={img} alt={code} style={{ width:18, height:13, objectFit:'cover', borderRadius:2 }} />
-                <span style={{ fontSize:12.5, fontWeight: i18n.language===code?700:500,
-                  color: i18n.language===code?'#1D9E75':'#333' }}>{label}</span>
-              </button>
-            ))}
-          </div>
-        </>
-      )}
     </div>
   )
 }

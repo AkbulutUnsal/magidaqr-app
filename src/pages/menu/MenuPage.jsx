@@ -3,8 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { track, trackOnce } from '../../lib/analytics'
 import { supabase } from '../../lib/supabase'
-import { useCurrency } from '../../hooks/useCurrency'
 import CartDrawer from '../../components/CartDrawer'
+import { unit } from '../../lib/businessMode'
 
 const LANG_FLAGS = { ka:'GE', en:'EN', tr:'TR', ru:'RU' }
 const LANG_NAMES = { ka:'ქართული', en:'English', tr:'Türkçe', ru:'Русский' }
@@ -20,19 +20,28 @@ const CAT_ICONS = {
   default: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 17h18"/><path d="M12 3a9 9 0 0 1 9 9H3a9 9 0 0 1 9-9z"/><line x1="12" y1="3" x2="12" y2="1"/></svg>,
 }
 
-const ALLERGEN_COLORS = ['#F97316','#3B82F6','#F59E0B','#8B5CF6','#10B981','#EC4899','#EF4444','#06B6D4']
-function allergenColor(id) {
-  let hash = 0
-  for (let i = 0; i < (id || '').length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0
-  return ALLERGEN_COLORS[hash % ALLERGEN_COLORS.length]
-}
-
 export default function MenuPage() {
   const { restaurantSlug, tableId } = useParams()
   const { t, i18n } = useTranslation()
-  const { format } = useCurrency()
   const navigate = useNavigate()
   const lang = i18n.language
+  const uLabel = unit(restaurant?.business_type, lang)  // Masa / Oda (mod + dil)
+  const LOY = {
+    tr: { cta: 'Telefonunla puan kazan', title: 'Sadakat', phone: 'Telefon', name: 'Ad (opsiyonel)', save: 'Kaydet', active: 'Sadakat aktif', hint: 'Siparişinden puan & damga kazan' },
+    en: { cta: 'Earn points with your phone', title: 'Loyalty', phone: 'Phone', name: 'Name (optional)', save: 'Save', active: 'Loyalty active', hint: 'Earn points & stamps from your order' },
+    ka: { cta: 'დააგროვე ქულები', title: 'ლოიალობა', phone: 'ტელეფონი', name: 'სახელი (არასავალდებულო)', save: 'შენახვა', active: 'ლოიალობა აქტიურია', hint: 'მიიღე ქულები შენი შეკვეთიდან' },
+    ru: { cta: 'Копите баллы по телефону', title: 'Лояльность', phone: 'Телефон', name: 'Имя (необязательно)', save: 'Сохранить', active: 'Лояльность активна', hint: 'Получайте баллы за заказ' },
+  }
+  const loy = LOY[lang] || LOY.en
+
+  async function identifyCustomer(phone, name) {
+    const ph = (phone || '').trim()
+    if (ph.length < 4 || !restaurant) return
+    const { data, error } = await supabase.rpc('find_or_create_customer', {
+      p_restaurant_id: restaurant.id, p_phone: ph, p_name: (name || '').trim() || null,
+    })
+    if (!error && data) { setCustomerId(data); setCustomerName((name || '').trim()); setLoyaltyOpen(false) }
+  }
 
   const [restaurant, setRestaurant] = useState(null)
   const [tableInfo, setTableInfo]   = useState(null)
@@ -44,28 +53,16 @@ export default function MenuPage() {
   const [loading, setLoading]       = useState(true)
   const [waiterSent, setWaiterSent] = useState(false)
   const [billSent, setBillSent]     = useState(false)
+  const [customerId, setCustomerId]     = useState(null)
+  const [customerName, setCustomerName] = useState('')
+  const [loyaltyOpen, setLoyaltyOpen]   = useState(false)
   const [detailItem, setDetailItem] = useState(null)
   const [scrolled, setScrolled]     = useState(false)
   const [heroCards, setHeroCards]   = useState([])
   const [campaigns, setCampaigns]   = useState([])
   const [allergens, setAllergens]   = useState([])
   const [infoPages, setInfoPages]   = useState([])
-  const [sections, setSections]     = useState([])
-  const [showSplash, setShowSplash] = useState(true)
-  const [showPicker, setShowPicker] = useState(false)
   const headerRef = useRef(null)
-
-  useEffect(() => {
-    if (loading) return
-    const timer = setTimeout(() => dismissSplash(), 1800)
-    return () => clearTimeout(timer)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading])
-
-  function dismissSplash() {
-    setShowSplash(false)
-    if (sections.length > 0) setShowPicker(true)
-  }
 
   useEffect(() => {
     async function load() {
@@ -75,14 +72,13 @@ export default function MenuPage() {
       if (!['ka','en','tr','ru'].includes(lang)) i18n.changeLanguage(rest.default_language || rest.default_lang || 'ka')
       const { data: table } = await supabase.from('tables').select('*').eq('id', tableId).single()
       setTableInfo(table)
-      const [{ data: cats }, { data: menuItems }, { data: heroData }, { data: campData }, { data: allergData }, { data: infoData }, secRes] = await Promise.all([
+      const [{ data: cats }, { data: menuItems }, { data: heroData }, { data: campData }, { data: allergData }, { data: infoData }] = await Promise.all([
         supabase.from('menu_categories').select('*').eq('restaurant_id', rest.id).eq('is_active', true).order('sort_order'),
         supabase.from('menu_items').select('*').eq('restaurant_id', rest.id).order('sort_order'),
         supabase.from('hero_cards').select('*').eq('restaurant_id', rest.id).eq('is_active', true).order('sort_order'),
         supabase.from('campaigns').select('*').eq('restaurant_id', rest.id).eq('is_active', true).order('sort_order'),
         supabase.from('allergens').select('*').eq('restaurant_id', rest.id),
-        supabase.from('info_pages').select('id,slug,title_ka,title_en,title_tr,title_ru').eq('restaurant_id', rest.id).eq('is_published', true).order('sort_order'),
-        supabase.from('menu_sections').select('*').eq('restaurant_id', rest.id).eq('is_active', true).order('sort_order').then(r => r, () => ({ data: [] })),
+        supabase.from('info_pages').select('id,slug,title_ka,title_en,title_tr,title_ru').eq('restaurant_id', rest.id).eq('is_published', true).order('sort_order')
       ])
       setCategories(cats || [])
       setItems(menuItems || [])
@@ -90,7 +86,6 @@ export default function MenuPage() {
       setCampaigns(campData || [])
       setAllergens(allergData || [])
       setInfoPages(infoData || [])
-      setSections(secRes?.data || [])
       setLoading(false)
 
       // ── Analitik: menü açıldı + sayfa görüntülendi ──
@@ -118,7 +113,6 @@ export default function MenuPage() {
   const featuredItems = useMemo(() => items.filter(i => i.is_featured && i.is_available && !i.is_sold_out), [items])
 
   const addToCart = (item) => {
-    if (restaurant?.ordering_enabled === false) return
     if (item.is_sold_out) return
     setCart(prev => {
       const ex = prev.find(c => c.id === item.id)
@@ -136,7 +130,7 @@ export default function MenuPage() {
     if (placing) return
     setPlacing(true)
     const { data: order, error } = await supabase.from('orders')
-      .insert({ restaurant_id: restaurant.id, table_id: tableId, note, total_price: cartTotal, lang })
+      .insert({ restaurant_id: restaurant.id, table_id: tableId, note, total_price: cartTotal, lang, customer_id: customerId })
       .select().single()
     if (error || !order) { setPlacing(false); return alert(t('error')) }
     await supabase.from('order_items').insert(cart.map(c => ({ order_id: order.id, menu_item_id: c.id, quantity: c.qty, unit_price: c.price })))
@@ -191,72 +185,8 @@ export default function MenuPage() {
   )
 
   const brand = restaurant?.brand_color || '#1D9E75'
-  const orderingEnabled = restaurant?.ordering_enabled !== false
   const WAITER = { ka:'გარსონი', en:'Call waiter', tr:'Garson çağır', ru:'Официант' }
   const BILL   = { ka:'ანგარიში', en:'Bill please',  tr:'Hesap iste',  ru:'Счёт' }
-
-  // ── Splash ekranı ──
-  if (showSplash) {
-    return (
-      <div onClick={dismissSplash} style={{ position:'fixed', inset:0, zIndex:200, cursor:'pointer',
-        background: restaurant?.cover_url
-          ? `linear-gradient(rgba(0,0,0,0.35),rgba(0,0,0,0.6)), url(${restaurant.cover_url})`
-          : `linear-gradient(135deg, ${brand}, #111)`,
-        backgroundSize:'cover', backgroundPosition:'center',
-        display:'flex', alignItems:'center', justifyContent:'center', animation:'fadeIn 0.4s ease' }}>
-        <style>{`@keyframes fadeIn{from{opacity:0}to{opacity:1}} @keyframes scaleIn{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}} @keyframes pulseFade{0%,100%{opacity:.5}50%{opacity:1}}`}</style>
-        <div style={{ textAlign:'center', animation:'scaleIn 0.5s ease', padding:24 }}>
-          {restaurant?.logo_url
-            ? <img src={restaurant.logo_url} alt="" style={{ width:96, height:96, borderRadius:'50%', border:'4px solid #fff', boxShadow:'0 8px 30px rgba(0,0,0,0.4)', objectFit:'cover', marginBottom:18 }}/>
-            : <div style={{ width:96, height:96, borderRadius:'50%', background:brand, border:'4px solid #fff', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:36, fontWeight:900, margin:'0 auto 18px' }}>
-                {(n(restaurant)||'?')[0]?.toUpperCase()}
-              </div>
-          }
-          <h1 style={{ color:'#fff', fontSize:26, fontWeight:900, margin:0, textShadow:'0 2px 12px rgba(0,0,0,0.5)' }}>{n(restaurant)}</h1>
-          <p style={{ color:'rgba(255,255,255,0.75)', fontSize:12, marginTop:16, animation:'pulseFade 1.6s ease infinite' }}>
-            {lang==='tr'?'Devam etmek için dokun':lang==='ka'?'შეხებით გააგრძელეთ':lang==='ru'?'Нажмите, чтобы продолжить':'Tap to continue'}
-          </p>
-        </div>
-      </div>
-    )
-  }
-
-  // ── Büyük ikonlu bölüm seçici ──
-  if (showPicker) {
-    return (
-      <div style={{ position:'fixed', inset:0, zIndex:199,
-        background: restaurant?.cover_url
-          ? `linear-gradient(rgba(0,0,0,0.55),rgba(0,0,0,0.75)), url(${restaurant.cover_url})`
-          : '#1a1a1a',
-        backgroundSize:'cover', backgroundPosition:'center',
-        display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:24, animation:'fadeIn 0.3s ease' }}>
-        <style>{`@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
-        <p style={{ color:'rgba(255,255,255,0.7)', fontSize:11.5, fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:18 }}>
-          {lang==='tr'?'Ne arıyorsun?':lang==='ka'?'რას ეძებთ?':lang==='ru'?'Что вы ищете?':'What are you looking for?'}
-        </p>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, width:'100%', maxWidth:340 }}>
-          {sections.map(sec => (
-            <button key={sec.id} onClick={() => {
-                const firstCat = categories.find(c => c.section_id === sec.id)
-                setShowPicker(false)
-                if (firstCat) setTimeout(() => selectCategory(firstCat.id), 50)
-              }}
-              style={{ background:'rgba(255,255,255,0.12)', backdropFilter:'blur(6px)', border:'1px solid rgba(255,255,255,0.22)',
-                borderRadius:18, padding:'24px 12px', display:'flex', flexDirection:'column', alignItems:'center', gap:10, cursor:'pointer' }}>
-              {sec.image_url
-                ? <img src={sec.image_url} alt="" style={{ width:36, height:36, borderRadius:10, objectFit:'cover' }}/>
-                : <span style={{ fontSize:30 }}>{sec.icon || '🍽️'}</span>}
-              <span style={{ color:'#fff', fontSize:12, fontWeight:800, textTransform:'uppercase', letterSpacing:'.03em', textAlign:'center' }}>{n(sec)}</span>
-            </button>
-          ))}
-        </div>
-        <button onClick={() => setShowPicker(false)}
-          style={{ marginTop:26, background:'none', border:'none', color:'rgba(255,255,255,0.65)', fontSize:12.5, fontWeight:600, cursor:'pointer', textDecoration:'underline' }}>
-          {lang==='tr'?'Tüm menüyü gör':lang==='ka'?'ნახეთ სრული მენიუ':lang==='ru'?'Показать всё меню':'View full menu'}
-        </button>
-      </div>
-    )
-  }
 
   return (
     <div style={{ maxWidth:480, margin:'0 auto', background:'#f8f7f5', minHeight:'100vh', fontFamily:'"Inter",system-ui,sans-serif', position:'relative' }}>
@@ -358,9 +288,8 @@ export default function MenuPage() {
                   </svg>
                   <span style={{ fontSize:11, fontWeight:800,
                     color: restaurant?.cover_url ? '#fff' : brand }}>
-                    Masa <span style={{ fontSize:14 }}>{tableInfo.table_number}</span>
-                    {tableInfo.label && tableInfo.label.trim().toLowerCase() !== `masa ${tableInfo.table_number}`.toLowerCase()
-                      ? <span style={{ fontWeight:500, fontSize:10 }}> {tableInfo.label}</span> : ''}
+                    {uLabel} <span style={{ fontSize:14 }}>{tableInfo.table_number}</span>
+                    {tableInfo.label ? <span style={{ fontWeight:500, fontSize:10 }}> {tableInfo.label}</span> : ''}
                   </span>
                 </div>
               )}
@@ -371,6 +300,32 @@ export default function MenuPage() {
 
       {/* ── SCROLL CONTAINER ── */}
       <div id="menu-scroll-container" style={{ paddingBottom:140 }}>
+
+        {/* ── SADAKAT BAR ── */}
+        {restaurant?.loyalty_enabled !== false && (
+          <div style={{ padding:'12px 16px 0' }}>
+            {customerId ? (
+              <div style={{ display:'flex', alignItems:'center', gap:10, background:'#e8f5ee', border:`1px solid ${brand}`, borderRadius:14, padding:'10px 14px' }}>
+                <span style={{ fontSize:18 }}>✓</span>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <p style={{ fontSize:13, fontWeight:800, color:'#0f5c40', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{customerName || loy.active}</p>
+                  <p style={{ fontSize:11, color:'#3a8f6d' }}>{loy.hint}</p>
+                </div>
+                <span style={{ fontSize:20 }}>🎁</span>
+              </div>
+            ) : (
+              <button onClick={() => setLoyaltyOpen(true)}
+                style={{ display:'flex', alignItems:'center', gap:10, width:'100%', textAlign:'left', background:'#fff', border:`1px dashed ${brand}`, borderRadius:14, padding:'11px 14px', cursor:'pointer' }}>
+                <span style={{ fontSize:20 }}>🎁</span>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <p style={{ fontSize:13, fontWeight:800, color:brand }}>{loy.cta}</p>
+                  <p style={{ fontSize:11, color:'#999' }}>{loy.hint}</p>
+                </div>
+                <span style={{ fontSize:18, color:brand }}>›</span>
+              </button>
+            )}
+          </div>
+        )}
 
         {/* ── HERO KARTLARI (slider) ── */}
         {heroCards.length > 0 && (
@@ -461,7 +416,7 @@ export default function MenuPage() {
                     <div style={{ position:'absolute', inset:0, background:'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 60%)' }} />
                     <div style={{ position:'absolute', bottom:8, left:10, right:10 }}>
                       <p style={{ fontSize:11, fontWeight:700, color:'#fff', margin:0, lineHeight:1.3 }}>{n(item)}</p>
-                      <p style={{ fontSize:12, fontWeight:800, color:'#fff', margin:'2px 0 0' }}>{format(item.price)}</p>
+                      <p style={{ fontSize:12, fontWeight:800, color:'#fff', margin:'2px 0 0' }}>{item.price} ₾</p>
                     </div>
                   </div>
                 </div>
@@ -473,149 +428,66 @@ export default function MenuPage() {
         {/* Menü başlangıcı */}
         <div id="menu-start" />
 
-        {/* Kategori sekmeleri — yatay, ikon + isim */}
-        {categories.length > 0 && (
-          <div className="cat-scroll" style={{ display:'flex', gap:8, overflowX:'auto', padding:'4px 16px 14px',
-            scrollbarWidth:'none', WebkitOverflowScrolling:'touch' }}>
-            <button onClick={() => selectCategory(null)}
-              style={{ flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', gap:5,
-                padding:'10px 16px', borderRadius:16, border:'none', cursor:'pointer',
-                background: !activeCategory ? brand : '#fff',
-                boxShadow: !activeCategory ? `0 4px 14px ${brand}40` : '0 1px 4px rgba(0,0,0,0.06)' }}>
-              {(CAT_ICONS.all)(!activeCategory ? '#fff' : '#999')}
-              <span style={{ fontSize:11, fontWeight:700, color: !activeCategory ? '#fff' : '#666', whiteSpace:'nowrap' }}>
-                {t('all_categories')}
-              </span>
-            </button>
-            {categories.map(cat => {
-              const isActive = activeCategory === cat.id
-              return (
-                <button key={cat.id} onClick={() => selectCategory(cat.id)}
-                  style={{ flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', gap:5,
-                    padding:'10px 16px', borderRadius:16, border:'none', cursor:'pointer',
-                    background: isActive ? brand : '#fff',
-                    boxShadow: isActive ? `0 4px 14px ${brand}40` : '0 1px 4px rgba(0,0,0,0.06)' }}>
-                  {(CAT_ICONS[cat.icon] || CAT_ICONS.default)(isActive ? '#fff' : '#999')}
-                  <span style={{ fontSize:11, fontWeight:700, color: isActive ? '#fff' : '#666', whiteSpace:'nowrap' }}>
-                    {n(cat)}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-        )}
-
         {/* Kategoriler + ürünler */}
         <div style={{ padding:'12px 16px 0' }}>
           {categories.filter(cat => !activeCategory || cat.id === activeCategory).map(cat => {
             const catItems = filteredItems.filter(i => i.category_id === cat.id)
             if (catItems.length === 0) return null
-            const catDesc = n(cat, 'description')
             return (
               <div key={cat.id} id={`cat-${cat.id}`} style={{ marginBottom:28 }}>
-                {/* Kategori "hero" başlığı — kapak fotoğrafı varsa onu kullan, yoksa marka rengi gradient */}
-                <div style={{ borderRadius:18, padding:'20px 18px', marginBottom:16, minHeight:96,
-                  background: cat.image_url
-                    ? `linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.55)), url(${cat.image_url})`
-                    : `linear-gradient(135deg, ${brand}, ${brand}cc)`,
-                  backgroundSize:'cover', backgroundPosition:'center',
-                  position:'relative', overflow:'hidden' }}>
-                  {!cat.image_url && (
-                    <div style={{ position:'absolute', right:-20, top:-20, width:120, height:120, borderRadius:'50%', background:'rgba(255,255,255,0.08)' }}/>
-                  )}
-                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom: catDesc ? 8 : 4, position:'relative' }}>
-                    <div style={{ width:34, height:34, borderRadius:10, background:'rgba(255,255,255,0.22)',
-                      display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, backdropFilter:'blur(2px)' }}>
-                      {(CAT_ICONS[cat.icon] || CAT_ICONS.default)('#fff')}
-                    </div>
-                    <h2 style={{ fontSize:19, fontWeight:800, color:'#fff', margin:0, textShadow: cat.image_url ? '0 1px 6px rgba(0,0,0,0.4)' : 'none' }}>{n(cat)}</h2>
+                {/* Kategori başlığı */}
+                <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
+                  <div style={{ width:32, height:32, borderRadius:10, background:brand+'15',
+                    display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    {(CAT_ICONS[cat.icon] || CAT_ICONS.default)(brand)}
                   </div>
-                  {catDesc && (
-                    <p style={{ fontSize:12.5, color:'rgba(255,255,255,0.92)', margin:'0 0 6px', lineHeight:1.5, position:'relative',
-                      textShadow: cat.image_url ? '0 1px 4px rgba(0,0,0,0.4)' : 'none' }}>
-                      {catDesc}
-                    </p>
-                  )}
-                  <p style={{ fontSize:11, color:'rgba(255,255,255,0.85)', margin:0, fontWeight:600, position:'relative',
-                    textShadow: cat.image_url ? '0 1px 4px rgba(0,0,0,0.4)' : 'none' }}>
-                    {catItems.length} {lang==='tr'?'ürün':lang==='ka'?'პროდუქტი':lang==='ru'?'блюд':'items'}
-                  </p>
+                  <h2 style={{ fontSize:16, fontWeight:800, color:'#111', margin:0 }}>{n(cat)}</h2>
                 </div>
 
                 {/* Ürün listesi — tek sütun, daha büyük */}
                 <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-                  {catItems.map((item, idx) => {
-                    const isNew = item.created_at && (Date.now() - new Date(item.created_at).getTime()) < 14*24*60*60*1000
-                    const itemAllergens = (item.allergen_ids || []).map(aid => allergens.find(a => a.id === aid)).filter(Boolean)
-                    return (
+                  {catItems.map((item, idx) => (
                     <div key={item.id} className="item-card"
                       onClick={() => openDetail(item)}
                       style={{ background:'#fff', borderRadius:18, overflow:'hidden', cursor:'pointer',
-                        boxShadow:'0 2px 12px rgba(0,0,0,0.06)', padding:12,
-                        display:'flex', gap:12, opacity: item.is_sold_out?0.6:1, animation:`fadeUp 0.4s ease ${idx*0.05}s both` }}>
-                      {/* Sol — kare görsel */}
-                      <div style={{ width:72, height:72, borderRadius:14, background:'#f4f4f2', overflow:'hidden', flexShrink:0, position:'relative' }}>
+                        boxShadow:'0 2px 12px rgba(0,0,0,0.06)',
+                        display:'flex', opacity: item.is_sold_out?0.6:1, animation:`fadeUp 0.4s ease ${idx*0.05}s both` }}>
+                      {/* Sol — görsel */}
+                      <div style={{ width:110, minHeight:110, background:'#f4f4f2', overflow:'hidden', flexShrink:0, position:'relative' }}>
                         {item.image_url
                           ? <img src={item.image_url} alt={n(item)} style={{ width:'100%', height:'100%', objectFit:'cover', filter:item.is_sold_out?'grayscale(1)':'none' }} />
-                          : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22 }}>🍽️</div>
+                          : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:28 }}>🍽️</div>
                         }
-                        {item.is_sold_out && <span style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.55)', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:8, fontWeight:800 }}>TÜKENDİ</span>}
+                        {item.is_sold_out && <span style={{ position:'absolute', top:6, left:6, background:'#E8192C', color:'#fff', fontSize:9, fontWeight:800, padding:'2px 7px', borderRadius:6, letterSpacing:.3 }}>TÜKENDİ</span>}
                       </div>
-                      {/* Sağ — bilgi */}
-                      <div style={{ flex:1, display:'flex', flexDirection:'column', justifyContent:'space-between', minWidth:0 }}>
+                      {/* Sağ — bilgi + ekle */}
+                      <div style={{ flex:1, padding:'12px 12px 12px 14px', display:'flex', flexDirection:'column', justifyContent:'space-between', minWidth:0 }}>
                         <div>
-                          {/* Üst satır: rozetler + fiyat */}
-                          <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:8, marginBottom:4 }}>
-                            <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
-                              {item.is_featured && (
-                                <span style={{ fontSize:9, fontWeight:800, color:'#fff', background:'#f59e0b', padding:'2px 7px', borderRadius:6, whiteSpace:'nowrap' }}>
-                                  {lang==='tr'?'Popüler':lang==='ka'?'პოპულარული':lang==='ru'?'Популярно':'Popular'}
-                                </span>
-                              )}
-                              {item.is_chef_pick && (
-                                <span style={{ fontSize:9, fontWeight:800, color:'#fff', background:'#8b5cf6', padding:'2px 7px', borderRadius:6, whiteSpace:'nowrap' }}>
-                                  {lang==='tr'?'Şef Önerisi':lang==='ka'?'შეფის რჩევა':lang==='ru'?'Выбор шефа':"Chef's Pick"}
-                                </span>
-                              )}
-                              {isNew && (
-                                <span style={{ fontSize:9, fontWeight:800, color:'#fff', background:brand, padding:'2px 7px', borderRadius:6, whiteSpace:'nowrap' }}>
-                                  {lang==='tr'?'Yeni':lang==='ka'?'ახალი':lang==='ru'?'Новинка':'New'}
-                                </span>
-                              )}
-                            </div>
-                            <span style={{ fontSize:15, fontWeight:800, color:brand, whiteSpace:'nowrap', flexShrink:0 }}>{format(item.price)}</span>
-                          </div>
-                          <h3 style={{ fontSize:14, fontWeight:700, margin:'0 0 3px', color:'#111', lineHeight:1.3 }}>{n(item)}</h3>
+                          <h3 style={{ fontSize:14, fontWeight:700, margin:'0 0 4px', color:'#111', lineHeight:1.3 }}>{n(item)}</h3>
                           {n(item,'description') && (
-                            <p style={{ fontSize:11, color:'#999', margin:'0 0 6px', lineHeight:1.5,
+                            <p style={{ fontSize:11, color:'#999', margin:'0 0 8px', lineHeight:1.5,
                               display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
                               {n(item,'description')}
                             </p>
                           )}
                         </div>
-                        {/* Alt satır: kalori kapsülü + alerjen daireleri + ekle */}
-                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
-                          <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
+                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                            <span style={{ fontSize:16, fontWeight:800, color:brand }}>{item.price} ₾</span>
                             {item.calories && (
-                              <span style={{ fontSize:10, fontWeight:600, color:'#888', background:'#f4f4f2', padding:'3px 9px', borderRadius:20, whiteSpace:'nowrap' }}>
+                              <span style={{ fontSize:10, color:'#bbb', display:'flex', alignItems:'center', gap:2 }}>
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2"><path d="M12 2c0 6-8 8-8 14a8 8 0 0 0 16 0c0-6-8-8-8-14z"/></svg>
                                 {item.calories} kcal
                               </span>
                             )}
-                            {itemAllergens.slice(0,5).map(a => (
-                              <span key={a.id} title={n(a)}
-                                style={{ width:19, height:19, borderRadius:'50%', background:allergenColor(a.id)+'22',
-                                  display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, flexShrink:0 }}>
-                                {a.icon}
-                              </span>
-                            ))}
                           </div>
-                          {!orderingEnabled ? null : item.is_sold_out ? (
-                            <span style={{ fontSize:10, fontWeight:800, color:'#E8192C', background:'#fee2e2', padding:'5px 10px', borderRadius:10, flexShrink:0, whiteSpace:'nowrap' }}>Tükendi</span>
+                          {item.is_sold_out ? (
+                            <span style={{ fontSize:11, fontWeight:800, color:'#E8192C', background:'#fee2e2', padding:'6px 12px', borderRadius:10, flexShrink:0 }}>Tükendi</span>
                           ) : (
                           <button className="add-btn-anim"
                             onClick={e => { e.stopPropagation(); addToCart(item) }}
-                            style={{ width:28, height:28, borderRadius:9, background:brand, color:'#fff',
-                              border:'none', fontSize:19, cursor:'pointer', display:'flex',
+                            style={{ width:32, height:32, borderRadius:10, background:brand, color:'#fff',
+                              border:'none', fontSize:22, cursor:'pointer', display:'flex',
                               alignItems:'center', justifyContent:'center', lineHeight:1,
                               boxShadow:`0 3px 10px ${brand}60`, flexShrink:0 }}>
                             +
@@ -624,8 +496,7 @@ export default function MenuPage() {
                         </div>
                       </div>
                     </div>
-                    )
-                  })}
+                  ))}
                 </div>
               </div>
             )
@@ -706,8 +577,6 @@ export default function MenuPage() {
         categories={categories} activeCategory={activeCategory}
         selectCategory={selectCategory} n={n} t={t}
         waiterLabel={WAITER[lang]||WAITER.en} billLabel={BILL[lang]||BILL.en}
-        orderingEnabled={orderingEnabled} format={format}
-        sections={sections} featuredItems={featuredItems} dispImg={item => item.image_url}
       />
 
       {/* ── ÜRÜN DETAY MODAL ── */}
@@ -768,9 +637,9 @@ export default function MenuPage() {
                 paddingTop:16, borderTop:'1px solid #f4f4f2' }}>
                 <div>
                   <p style={{ fontSize:11, color:'#aaa', margin:0 }}>Fiyat</p>
-                  <span style={{ fontSize:28, fontWeight:900, color:brand }}>{format(detailItem.price)}</span>
+                  <span style={{ fontSize:28, fontWeight:900, color:brand }}>{detailItem.price} ₾</span>
                 </div>
-                {!orderingEnabled ? null : detailItem.is_sold_out ? (
+                {detailItem.is_sold_out ? (
                   <span style={{ background:'#fee2e2', color:'#E8192C', padding:'14px 32px', borderRadius:16, fontSize:16, fontWeight:800, letterSpacing:.3 }}>Tükendi</span>
                 ) : (
                 <button onClick={() => addToCart(detailItem)}
@@ -787,6 +656,7 @@ export default function MenuPage() {
       )}
 
       {cartOpen && <CartDrawer cart={cart} setCart={setCart} onClose={() => setCartOpen(false)} onOrder={placeOrder} />}
+      {loyaltyOpen && <LoyaltyModal brand={brand} loy={loy} onClose={() => setLoyaltyOpen(false)} onSave={identifyCustomer} />}
     </div>
   )
 }
@@ -844,18 +714,8 @@ function LangBtn({ lang, i18n, brand, small }) {
 }
 
 // ── BOTTOM BAR ──
-function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal, setCartOpen, categories, activeCategory, selectCategory, n, t, waiterLabel, billLabel, orderingEnabled, format, sections, featuredItems }) {
+function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal, setCartOpen, categories, activeCategory, selectCategory, n, t, waiterLabel, billLabel }) {
   const [menuOpen, setMenuOpen] = useState(false)
-  const [expandedSecs, setExpandedSecs] = useState({})
-  const toggleSec = (id) => setExpandedSecs(p => ({ ...p, [id]: p[id] === undefined ? false : !p[id] }))
-  const isExpanded = (id) => expandedSecs[id] === undefined ? true : expandedSecs[id]
-
-  const grouped = (sections || [])
-    .map(sec => ({ section: sec, cats: categories.filter(c => c.section_id === sec.id) }))
-    .filter(g => g.cats.length > 0)
-  const groupedCatIds = new Set(grouped.flatMap(g => g.cats.map(c => c.id)))
-  const ungrouped = categories.filter(c => !groupedCatIds.has(c.id))
-  const useGroups = grouped.length > 0
 
   return (
     <>
@@ -887,104 +747,23 @@ function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal
               <span style={{ fontSize:14, fontWeight: !activeCategory?700:400, color: !activeCategory?brand:'#333' }}>Tümü</span>
               {!activeCategory && <svg style={{ marginLeft:'auto' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={brand} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>}
             </button>
-
-            <div style={{ maxHeight:'50vh', overflowY:'auto' }}>
-            {useGroups ? (
-              <>
-                {grouped.map(({ section, cats }) => {
-                  const open = isExpanded(section.id)
-                  return (
-                    <div key={section.id}>
-                      <button onClick={() => toggleSec(section.id)}
-                        style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'12px 16px',
-                          border:'none', cursor:'pointer', background:'#fafafa', borderTop:'1px solid #f4f4f2' }}>
-                        {section.image_url
-                          ? <img src={section.image_url} alt="" style={{ width:26, height:26, borderRadius:7, objectFit:'cover', flexShrink:0 }}/>
-                          : <span style={{ fontSize:17, flexShrink:0 }}>{section.icon || '🍽️'}</span>}
-                        <span style={{ fontSize:13.5, fontWeight:800, color:'#222' }}>{n(section)}</span>
-                        <svg style={{ marginLeft:'auto', transform: open?'rotate(180deg)':'none', transition:'transform .15s' }}
-                          width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                      </button>
-                      {open && cats.map(cat => {
-                        const isActive = activeCategory === cat.id
-                        return (
-                          <button key={cat.id} onClick={() => { selectCategory(cat.id); setMenuOpen(false) }}
-                            style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'10px 16px 10px 30px',
-                              border:'none', cursor:'pointer', borderTop:'1px solid #f8f8f8',
-                              background: isActive ? brand+'10' : '#fff' }}>
-                            <span style={{ width:6, height:6, borderRadius:'50%', background: isActive?brand:'#ccc', flexShrink:0 }}/>
-                            <span style={{ fontSize:13.5, fontWeight:isActive?700:400, color:isActive?brand:'#444' }}>{n(cat)}</span>
-                            {isActive && <svg style={{ marginLeft:'auto' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={brand} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  )
-                })}
-                {ungrouped.length > 0 && (
-                  <div>
-                    <div style={{ padding:'12px 16px 6px', fontSize:11, fontWeight:700, color:'#bbb', textTransform:'uppercase', letterSpacing:'.04em', borderTop:'1px solid #f4f4f2' }}>Diğer</div>
-                    {ungrouped.map(cat => {
-                      const isActive = activeCategory === cat.id
-                      return (
-                        <button key={cat.id} onClick={() => { selectCategory(cat.id); setMenuOpen(false) }}
-                          style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'10px 16px',
-                            border:'none', cursor:'pointer', background: isActive ? brand+'10' : '#fff' }}>
-                          <div style={{ width:30, height:30, borderRadius:9, background: isActive ? brand : '#f4f4f2',
-                            display:'flex', alignItems:'center', justifyContent:'center' }}>
-                            {(CAT_ICONS[cat.icon] || CAT_ICONS.default)(isActive ? '#fff' : brand)}
-                          </div>
-                          <span style={{ fontSize:13.5, fontWeight:isActive?700:400, color:isActive?brand:'#333' }}>{n(cat)}</span>
-                        </button>
-                      )
-                    })}
+            {categories.map(cat => {
+              const isActive = activeCategory === cat.id
+              return (
+                <button key={cat.id} onClick={() => { selectCategory(cat.id); setMenuOpen(false) }}
+                  style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'12px 16px',
+                    border:'none', cursor:'pointer', borderTop:'1px solid #f8f8f8',
+                    background: isActive ? brand+'10' : '#fff',
+                    borderLeft: isActive ? `3px solid ${brand}` : '3px solid transparent' }}>
+                  <div style={{ width:36, height:36, borderRadius:10, background: isActive ? brand : '#f4f4f2',
+                    display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    {(CAT_ICONS[cat.icon] || CAT_ICONS.default)(isActive ? '#fff' : brand)}
                   </div>
-                )}
-              </>
-            ) : (
-              categories.map(cat => {
-                const isActive = activeCategory === cat.id
-                return (
-                  <button key={cat.id} onClick={() => { selectCategory(cat.id); setMenuOpen(false) }}
-                    style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'12px 16px',
-                      border:'none', cursor:'pointer', borderTop:'1px solid #f8f8f8',
-                      background: isActive ? brand+'10' : '#fff',
-                      borderLeft: isActive ? `3px solid ${brand}` : '3px solid transparent' }}>
-                    <div style={{ width:36, height:36, borderRadius:10, background: isActive ? brand : '#f4f4f2',
-                      display:'flex', alignItems:'center', justifyContent:'center' }}>
-                      {(CAT_ICONS[cat.icon] || CAT_ICONS.default)(isActive ? '#fff' : brand)}
-                    </div>
-                    <span style={{ fontSize:14, fontWeight:isActive?700:400, color:isActive?brand:'#333' }}>{n(cat)}</span>
-                    {isActive && <svg style={{ marginLeft:'auto' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={brand} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>}
-                  </button>
-                )
-              })
-            )}
-            </div>
-
-            {/* Önerilen Ürünler */}
-            {featuredItems && featuredItems.length > 0 && (
-              <div style={{ borderTop:'1px solid #f4f4f2', padding:'12px 0 14px' }}>
-                <p style={{ fontSize:10.5, fontWeight:700, color:'#bbb', textTransform:'uppercase', letterSpacing:'.05em', margin:'0 16px 8px' }}>
-                  {t('featured')}
-                </p>
-                <div style={{ display:'flex', gap:10, overflowX:'auto', padding:'0 16px', scrollbarWidth:'none' }}>
-                  {featuredItems.slice(0,8).map(item => (
-                    <button key={item.id} onClick={() => { selectCategory(item.category_id); setMenuOpen(false) }}
-                      style={{ flexShrink:0, width:88, border:'none', background:'none', cursor:'pointer', padding:0, textAlign:'left' }}>
-                      <div style={{ width:88, height:64, borderRadius:12, background:'#f4f4f2', overflow:'hidden', marginBottom:5 }}>
-                        {item.image_url
-                          ? <img src={item.image_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
-                          : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>🍽️</div>}
-                      </div>
-                      <p style={{ fontSize:10.5, fontWeight:700, color:'#333', margin:'0 0 2px', lineHeight:1.3,
-                        display:'-webkit-box', WebkitLineClamp:1, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{n(item)}</p>
-                      <p style={{ fontSize:10.5, fontWeight:800, color:brand, margin:0 }}>{format(item.price)}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+                  <span style={{ fontSize:14, fontWeight:isActive?700:400, color:isActive?brand:'#333' }}>{n(cat)}</span>
+                  {isActive && <svg style={{ marginLeft:'auto' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={brand} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>}
+                </button>
+              )
+            })}
           </div>
         </>
       )}
@@ -992,12 +771,11 @@ function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal
       <div style={{ position:'fixed', bottom:0, left:'50%', transform:'translateX(-50%)',
         width:'100%', maxWidth:480, background:'rgba(255,255,255,0.97)',
         backdropFilter:'blur(12px)', borderTop:'1px solid rgba(235,235,235,0.8)',
-        zIndex:60, display:'flex', alignItems:'center', justifyContent:'center',
+        zIndex:60, display:'flex', alignItems:'center',
         padding:'8px 12px 22px', gap:6,
         boxShadow:'0 -4px 24px rgba(0,0,0,0.1)' }}>
 
-        {/* Garson — sadece sipariş modülü açıksa (garson çağırmanın anlamı olması için) */}
-        {orderingEnabled && (
+        {/* Garson */}
         <button onClick={(e) => { e.preventDefault(); sendCall('waiter') }} disabled={waiterSent}
           style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:3,
             padding:'8px 4px', borderRadius:14, border:'none', cursor:waiterSent?'default':'pointer',
@@ -1012,7 +790,6 @@ function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal
             {waiterSent?'✓ Tamam':waiterLabel}
           </span>
         </button>
-        )}
 
         {/* Menü zil */}
         <button onClick={() => setMenuOpen(o => !o)}
@@ -1028,11 +805,10 @@ function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal
               <line x1="12" y1="3" x2="12" y2="1"/>
             </svg>
           </div>
-          <span style={{ fontSize:9, fontWeight:800, color:'#E8192C' }}>{t('menu')}</span>
+          <span style={{ fontSize:9, fontWeight:800, color:'#E8192C' }}>Menü</span>
         </button>
 
-        {/* Hesap — sadece sipariş modülü açıksa */}
-        {orderingEnabled && (
+        {/* Hesap */}
         <button onClick={(e) => { e.preventDefault(); sendCall('bill') }} disabled={billSent}
           style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:3,
             padding:'8px 4px', borderRadius:14, border:'none', cursor:billSent?'default':'pointer',
@@ -1049,10 +825,8 @@ function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal
             {billSent?'✓ Tamam':billLabel}
           </span>
         </button>
-        )}
 
-        {/* Sepet — sadece sipariş modülü açıksa */}
-        {orderingEnabled && (
+        {/* Sepet */}
         <button onClick={() => setCartOpen(true)}
           style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:3,
             padding:'8px 4px', borderRadius:14, border:'none', cursor:'pointer',
@@ -1071,11 +845,38 @@ function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal
             <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
           </svg>
           <span style={{ fontSize:9, fontWeight:700, color:cartCount>0?'#fff':'#999', whiteSpace:'nowrap' }}>
-            {cartCount>0?format(cartTotal):t('cart')}
+            {cartCount>0?`${cartTotal.toFixed(0)} ₾`:'Sepet'}
           </span>
         </button>
-        )}
       </div>
     </>
+  )
+}
+
+/* ── Sadakat Modalı (QR misafir self-tanımlama) ── */
+function LoyaltyModal({ brand, loy, onClose, onSave }) {
+  const [phone, setPhone] = useState('')
+  const [name, setName] = useState('')
+  const inp = { width: '100%', boxSizing: 'border-box', border: '1px solid #e8e8e4', borderRadius: 12, padding: '13px 14px', fontSize: 15, outline: 'none', marginBottom: 12 }
+  const ok = phone.trim().length >= 4
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 3000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 480, background: '#fff', borderRadius: '20px 20px 0 0', padding: 22, animation: 'fadeUp 0.25s ease' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+          <span style={{ fontSize: 24 }}>🎁</span>
+          <p style={{ fontSize: 19, fontWeight: 900, color: '#111' }}>{loy.title}</p>
+        </div>
+        <p style={{ fontSize: 13, color: '#888', marginBottom: 18 }}>{loy.hint}</p>
+
+        <input value={phone} onChange={e => setPhone(e.target.value)} type="tel" inputMode="tel" placeholder={loy.phone}
+          style={inp} autoFocus />
+        <input value={name} onChange={e => setName(e.target.value)} placeholder={loy.name} style={inp} />
+
+        <button onClick={() => ok && onSave(phone, name)} disabled={!ok}
+          style={{ width: '100%', background: ok ? brand : '#cbd5d0', color: '#fff', border: 'none', borderRadius: 14, padding: '15px', fontSize: 16, fontWeight: 800, cursor: ok ? 'pointer' : 'not-allowed' }}>
+          {loy.save}
+        </button>
+      </div>
+    </div>
   )
 }

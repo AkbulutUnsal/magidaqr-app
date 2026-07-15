@@ -12,6 +12,7 @@ import AdminOrders    from './pages/admin/AdminOrders'
 import AdminKitchen   from './pages/admin/AdminKitchen'
 import AdminWaiter    from './pages/admin/AdminWaiter'
 import AdminCRM       from './pages/admin/AdminCRM'
+import AdminStock     from './pages/admin/AdminStock'
 import AdminMenu      from './pages/admin/AdminMenu'
 import AdminCategories from './pages/admin/AdminCategories'
 import AdminSections   from './pages/admin/AdminSections'
@@ -82,6 +83,7 @@ export default function App() {
           <Route path="settings"   element={<AdminSettings />} />
           <Route path="staff"      element={<AdminStaff />} />
           <Route path="crm"        element={<AdminCRM />} />
+          <Route path="stok"       element={<AdminStock />} />
           <Route path="analytics"  element={<AdminAnalytics />} />
           <Route path="qr"         element={<AdminQR />} />
           <Route path="orders"     element={<AdminOrders />} />
