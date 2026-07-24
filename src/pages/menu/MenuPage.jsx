@@ -25,7 +25,6 @@ export default function MenuPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const lang = i18n.language
-  const uLabel = unit(restaurant?.business_type, lang)  // Masa / Oda (mod + dil)
   const LOY = {
     tr: { cta: 'Telefonunla puan kazan', title: 'Sadakat', phone: 'Telefon', name: 'Ad (opsiyonel)', save: 'Kaydet', active: 'Sadakat aktif', hint: 'Siparişinden puan & damga kazan' },
     en: { cta: 'Earn points with your phone', title: 'Loyalty', phone: 'Phone', name: 'Name (optional)', save: 'Save', active: 'Loyalty active', hint: 'Earn points & stamps from your order' },
@@ -63,6 +62,9 @@ export default function MenuPage() {
   const [allergens, setAllergens]   = useState([])
   const [infoPages, setInfoPages]   = useState([])
   const headerRef = useRef(null)
+
+  // Masa / Oda (işletme modu + dil) — restaurant state'i tanımlandıktan SONRA
+  const uLabel = unit(restaurant?.business_type, lang)
 
   useEffect(() => {
     async function load() {
