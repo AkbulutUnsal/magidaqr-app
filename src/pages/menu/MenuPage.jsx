@@ -61,6 +61,7 @@ export default function MenuPage() {
   const [campaigns, setCampaigns]   = useState([])
   const [allergens, setAllergens]   = useState([])
   const [infoPages, setInfoPages]   = useState([])
+  const [loadError, setLoadError]   = useState(null)
   const headerRef = useRef(null)
 
   // Masa / Oda (işletme modu + dil) — restaurant state'i tanımlandıktan SONRA
@@ -69,7 +70,7 @@ export default function MenuPage() {
   useEffect(() => {
     async function load() {
       const { data: rest } = await supabase.from('restaurants').select('*').eq('slug', restaurantSlug).single()
-      if (!rest) return
+      if (!rest) { setLoadError(`Restoran bulunamadı: "${restaurantSlug}"`); setLoading(false); return }
       setRestaurant(rest)
       if (!['ka','en','tr','ru'].includes(lang)) i18n.changeLanguage(rest.default_language || rest.default_lang || 'ka')
       const { data: table } = await supabase.from('tables').select('*').eq('id', tableId).single()
@@ -175,6 +176,17 @@ export default function MenuPage() {
       el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }, 60)
   }
+
+  if (loadError) return (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background:'#0a0a0a', padding:24 }}>
+      <div style={{ textAlign:'center', maxWidth:340 }}>
+        <p style={{ fontSize:40, marginBottom:12 }}>😕</p>
+        <p style={{ color:'#fff', fontSize:16, fontWeight:700, marginBottom:8 }}>Menü açılamadı</p>
+        <p style={{ color:'#888', fontSize:13, lineHeight:1.6, wordBreak:'break-all' }}>{loadError}</p>
+        <p style={{ color:'#555', fontSize:11, marginTop:14, wordBreak:'break-all' }}>{typeof window !== 'undefined' ? window.location.href : ''}</p>
+      </div>
+    </div>
+  )
 
   if (loading) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background:'#0a0a0a' }}>
