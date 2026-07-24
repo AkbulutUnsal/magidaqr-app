@@ -8,5 +8,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    // Oturum tarayıcıda saklansın ve token otomatik yenilensin
+    // (storageKey'i DEĞİŞTİRME — değişirse mevcut oturumlar düşer)
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
   realtime: { params: { eventsPerSecond: 20 } }
 })
