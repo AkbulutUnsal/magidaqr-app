@@ -66,6 +66,7 @@ export default function MenuPage() {
 
   // Masa / Oda (işletme modu + dil) — restaurant state'i tanımlandıktan SONRA
   const uLabel = unit(restaurant?.business_type, lang)
+  const ordering = restaurant?.plan !== 'basic'  // Temel plan → salt menü (sipariş/çağrı/sepet gizli)
 
   useEffect(() => {
     async function load() {
@@ -316,7 +317,7 @@ export default function MenuPage() {
       <div id="menu-scroll-container" style={{ paddingBottom:140 }}>
 
         {/* ── SADAKAT BAR ── */}
-        {restaurant?.loyalty_enabled !== false && (
+        {ordering && restaurant?.loyalty_enabled !== false && (
           <div style={{ padding:'12px 16px 0' }}>
             {customerId ? (
               <div style={{ display:'flex', alignItems:'center', gap:10, background:'#e8f5ee', border:`1px solid ${brand}`, borderRadius:14, padding:'10px 14px' }}>
@@ -497,7 +498,7 @@ export default function MenuPage() {
                           </div>
                           {item.is_sold_out ? (
                             <span style={{ fontSize:11, fontWeight:800, color:'#E8192C', background:'#fee2e2', padding:'6px 12px', borderRadius:10, flexShrink:0 }}>Tükendi</span>
-                          ) : (
+                          ) : ordering ? (
                           <button className="add-btn-anim"
                             onClick={e => { e.stopPropagation(); addToCart(item) }}
                             style={{ width:32, height:32, borderRadius:10, background:brand, color:'#fff',
@@ -506,7 +507,7 @@ export default function MenuPage() {
                               boxShadow:`0 3px 10px ${brand}60`, flexShrink:0 }}>
                             +
                           </button>
-                          )}
+                          ) : null}
                         </div>
                       </div>
                     </div>
@@ -586,7 +587,7 @@ export default function MenuPage() {
 
       {/* ── BOTTOM BAR ── */}
       <BottomBar
-        brand={brand} waiterSent={waiterSent} billSent={billSent} sendCall={sendCall}
+        brand={brand} waiterSent={waiterSent} billSent={billSent} sendCall={sendCall} ordering={ordering}
         cartCount={cartCount} cartTotal={cartTotal} setCartOpen={setCartOpen}
         categories={categories} activeCategory={activeCategory}
         selectCategory={selectCategory} n={n} t={t}
@@ -655,14 +656,14 @@ export default function MenuPage() {
                 </div>
                 {detailItem.is_sold_out ? (
                   <span style={{ background:'#fee2e2', color:'#E8192C', padding:'14px 32px', borderRadius:16, fontSize:16, fontWeight:800, letterSpacing:.3 }}>Tükendi</span>
-                ) : (
+                ) : ordering ? (
                 <button onClick={() => addToCart(detailItem)}
                   style={{ background:brand, color:'#fff', border:'none', padding:'14px 32px',
                     borderRadius:16, fontSize:16, fontWeight:800, cursor:'pointer',
                     boxShadow:`0 6px 20px ${brand}55`, letterSpacing:.3 }}>
                   + {t('add_to_cart')}
                 </button>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
@@ -728,7 +729,7 @@ function LangBtn({ lang, i18n, brand, small }) {
 }
 
 // ── BOTTOM BAR ──
-function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal, setCartOpen, categories, activeCategory, selectCategory, n, t, waiterLabel, billLabel }) {
+function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal, setCartOpen, categories, activeCategory, selectCategory, n, t, waiterLabel, billLabel, ordering = true }) {
   const [menuOpen, setMenuOpen] = useState(false)
 
   return (
@@ -785,12 +786,12 @@ function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal
       <div style={{ position:'fixed', bottom:0, left:'50%', transform:'translateX(-50%)',
         width:'100%', maxWidth:480, background:'rgba(255,255,255,0.97)',
         backdropFilter:'blur(12px)', borderTop:'1px solid rgba(235,235,235,0.8)',
-        zIndex:60, display:'flex', alignItems:'center',
+        zIndex:60, display:'flex', alignItems:'center', justifyContent: ordering ? 'flex-start' : 'center',
         padding:'8px 12px 22px', gap:6,
         boxShadow:'0 -4px 24px rgba(0,0,0,0.1)' }}>
 
         {/* Garson */}
-        <button onClick={(e) => { e.preventDefault(); sendCall('waiter') }} disabled={waiterSent}
+        {ordering && <button onClick={(e) => { e.preventDefault(); sendCall('waiter') }} disabled={waiterSent}
           style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:3,
             padding:'8px 4px', borderRadius:14, border:'none', cursor:waiterSent?'default':'pointer',
             background:waiterSent?'#f4f4f4':'#E1F5EE',
@@ -803,7 +804,7 @@ function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal
           <span style={{ fontSize:9, fontWeight:700, color:waiterSent?'#ccc':'#0F6E56', whiteSpace:'nowrap' }}>
             {waiterSent?'✓ Tamam':waiterLabel}
           </span>
-        </button>
+        </button>}
 
         {/* Menü zil */}
         <button onClick={() => setMenuOpen(o => !o)}
@@ -823,7 +824,7 @@ function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal
         </button>
 
         {/* Hesap */}
-        <button onClick={(e) => { e.preventDefault(); sendCall('bill') }} disabled={billSent}
+        {ordering && <button onClick={(e) => { e.preventDefault(); sendCall('bill') }} disabled={billSent}
           style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:3,
             padding:'8px 4px', borderRadius:14, border:'none', cursor:billSent?'default':'pointer',
             background:billSent?'#f4f4f4':'#FAEEDA',
@@ -838,10 +839,10 @@ function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal
           <span style={{ fontSize:9, fontWeight:700, color:billSent?'#ccc':'#633806', whiteSpace:'nowrap' }}>
             {billSent?'✓ Tamam':billLabel}
           </span>
-        </button>
+        </button>}
 
         {/* Sepet */}
-        <button onClick={() => setCartOpen(true)}
+        {ordering && <button onClick={() => setCartOpen(true)}
           style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:3,
             padding:'8px 4px', borderRadius:14, border:'none', cursor:'pointer',
             background:cartCount>0?brand:'#f4f4f4', position:'relative' }}>
@@ -861,7 +862,7 @@ function BottomBar({ brand, waiterSent, billSent, sendCall, cartCount, cartTotal
           <span style={{ fontSize:9, fontWeight:700, color:cartCount>0?'#fff':'#999', whiteSpace:'nowrap' }}>
             {cartCount>0?`${cartTotal.toFixed(0)} ₾`:'Sepet'}
           </span>
-        </button>
+        </button>}
       </div>
     </>
   )
