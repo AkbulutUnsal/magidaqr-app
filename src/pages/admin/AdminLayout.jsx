@@ -1,7 +1,21 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import { supabase } from '../../lib/supabase'
 import AdminFooter from '../../components/AdminFooter'
+
+/* ── Plan-kilit (kendi içinde, dış dosyaya bağımlı değil) ──
+   Mutfak/Garson/Bildirimler = Gelişmiş. Temel'de kilitli.
+   plan okunamazsa fail-open (yanlış kilitleme yapmaz). */
+const PLAN_RANK = { basic: 1, advanced: 2 }
+const FEATURE_MIN = { kitchen: 'advanced', waiter: 'advanced', sms: 'advanced' }
+function planAllows(plan, feature) {
+  const need = FEATURE_MIN[feature]
+  if (!need) return true
+  if (!plan) return true            // plan bilinmiyor → aç (güvenli taraf)
+  return (PLAN_RANK[plan] || 0) >= (PLAN_RANK[need] || 0)
+}
+const PadlockIcon = ()=><svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
 
 // ── Icons ──
 const HomeIcon    = ()=><svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -40,8 +54,8 @@ const NAV = [
     { to:'/admin',             label:'Dashboard',       Icon:HomeIcon,     end:true },
     { to:'/admin/analytics',   label:'Analitik',        Icon:ChartIcon },
     { to:'/admin/orders',      label:'Siparişler',      Icon:ReceiptIcon, dot:true },
-    { to:'/admin/mutfak',      label:'Mutfak',          Icon:ChefIcon, dot:true },
-    { to:'/admin/garson',      label:'Garson',          Icon:BellIcon, dot:true },
+    { to:'/admin/mutfak',      label:'Mutfak',          Icon:ChefIcon, dot:true, feature:'kitchen' },
+    { to:'/admin/garson',      label:'Garson',          Icon:BellIcon, dot:true, feature:'waiter' },
     { to:'/admin/qr',          label:'QR Stüdyo',       Icon:QrIcon },
     { to:'/admin/ai',          label:'AI Asistan',      Icon:AIIcon, dot:true },
   ]},
@@ -71,6 +85,7 @@ const NAV = [
     { to:'/admin/staff',       label:'Personel',         Icon:UsersIcon },
     { to:'/admin/crm',         label:'Müşteriler',       Icon:UserIcon },
     { to:'/admin/stok',        label:'Stok',             Icon:ArchiveIcon },
+    { to:'/admin/bildirimler', label:'Bildirimler',      Icon:BellIcon, feature:'sms' },
     { to:'/admin/reports',     label:'Raporlar',         Icon:ReportIcon },
     { to:'/admin/settings',    label:'Ayarlar',          Icon:CogIcon },
   ]},
@@ -80,6 +95,14 @@ export default function AdminLayout() {
   const { profile, signOut } = useAuth()
   const navigate = useNavigate()
   const [mini, setMini] = useState(false)
+  const [plan, setPlan] = useState(undefined)   // undefined = henüz bilinmiyor → fail-open
+
+  useEffect(() => {
+    if (!profile?.restaurant_id) return
+    supabase.from('restaurants').select('*').eq('id', profile.restaurant_id).single()
+      .then(({ data }) => setPlan(data?.plan ?? null))
+      .catch(() => setPlan(null))
+  }, [profile?.restaurant_id])
 
   const out = async () => { await signOut(); navigate('/login') }
   const isSA = profile?.role === 'super_admin'
@@ -113,16 +136,30 @@ export default function AdminLayout() {
                   {g.section}
                 </p>
               )}
-              {g.items.map(item=>(
-                <NavLink key={item.to} to={item.to} end={item.end}
-                  title={mini ? item.label : undefined}
-                  className={({isActive})=>`nl${isActive?' on':''}`}
-                  style={{justifyContent:mini?'center':'flex-start'}}>
-                  <item.Icon />
-                  {!mini && <span style={{flex:1}}>{item.label}</span>}
-                  {!mini && item.dot && <span style={{width:7,height:7,borderRadius:'50%',background:'#1D9E75',flexShrink:0}}/>}
-                </NavLink>
-              ))}
+              {g.items.map(item=>{
+                const locked = item.feature && !planAllows(plan, item.feature)
+                if (locked) return (
+                  <div key={item.to}
+                    title={mini ? `${item.label} · Gelişmiş pakete özel` : 'Gelişmiş pakete özel'}
+                    className="nl"
+                    onClick={()=>navigate('/admin/settings')}
+                    style={{justifyContent:mini?'center':'flex-start',opacity:.5,cursor:'pointer'}}>
+                    <item.Icon />
+                    {!mini && <span style={{flex:1}}>{item.label}</span>}
+                    {!mini && <span style={{color:'#c9a227',flexShrink:0,display:'flex'}}><PadlockIcon/></span>}
+                  </div>
+                )
+                return (
+                  <NavLink key={item.to} to={item.to} end={item.end}
+                    title={mini ? item.label : undefined}
+                    className={({isActive})=>`nl${isActive?' on':''}`}
+                    style={{justifyContent:mini?'center':'flex-start'}}>
+                    <item.Icon />
+                    {!mini && <span style={{flex:1}}>{item.label}</span>}
+                    {!mini && item.dot && <span style={{width:7,height:7,borderRadius:'50%',background:'#1D9E75',flexShrink:0}}/>}
+                  </NavLink>
+                )
+              })}
             </div>
           ))}
 
