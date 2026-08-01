@@ -96,12 +96,24 @@ export default function AdminLayout() {
   const navigate = useNavigate()
   const [mini, setMini] = useState(false)
   const [plan, setPlan] = useState(undefined)   // undefined = henüz bilinmiyor → fail-open
+  const [menuUrl, setMenuUrl] = useState(null)
 
   useEffect(() => {
     if (!profile?.restaurant_id) return
-    supabase.from('restaurants').select('*').eq('id', profile.restaurant_id).single()
-      .then(({ data }) => setPlan(data?.plan ?? null))
-      .catch(() => setPlan(null))
+    let alive = true
+    ;(async () => {
+      const { data: r } = await supabase.from('restaurants').select('*').eq('id', profile.restaurant_id).single()
+      if (!alive) return
+      setPlan(r?.plan ?? null)
+      if (r?.slug) {
+        const { data: t } = await supabase.from('tables').select('id')
+          .eq('restaurant_id', profile.restaurant_id).eq('is_active', true)
+          .order('table_number', { ascending: true }).limit(1)
+        const tid = t?.[0]?.id
+        if (alive) setMenuUrl(tid ? `/menu/${r.slug}/${tid}` : null)
+      }
+    })().catch(() => { if (alive) setPlan(null) })
+    return () => { alive = false }
   }, [profile?.restaurant_id])
 
   const out = async () => { await signOut(); navigate('/login') }
@@ -206,11 +218,19 @@ export default function AdminLayout() {
             <span style={{fontSize:12,color:'#bbb'}}>Hızlı ara...</span>
             <span style={{marginLeft:'auto',fontSize:9,color:'#ccc',background:'#eee',padding:'1px 4px',borderRadius:4}}>⌘K</span>
           </div>
-          <a href="/menu/main/c4efa2ba-fc1c-43e5-980b-b57257b27147" target="_blank"
-            style={{display:'flex',alignItems:'center',gap:6,padding:'6px 14px',background:'#1D9E75',color:'#fff',borderRadius:8,fontSize:12,fontWeight:600,textDecoration:'none'}}>
-            <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            Menüyü Gör
-          </a>
+          {menuUrl ? (
+            <a href={menuUrl} target="_blank" rel="noreferrer"
+              style={{display:'flex',alignItems:'center',gap:6,padding:'6px 14px',background:'#1D9E75',color:'#fff',borderRadius:8,fontSize:12,fontWeight:600,textDecoration:'none'}}>
+              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              Menüyü Gör
+            </a>
+          ) : (
+            <span title="Menü önizlemesi için önce bir masa ekleyin (Masalar sayfası)"
+              style={{display:'flex',alignItems:'center',gap:6,padding:'6px 14px',background:'#e8e8e4',color:'#999',borderRadius:8,fontSize:12,fontWeight:600,cursor:'not-allowed'}}>
+              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              Menüyü Gör
+            </span>
+          )}
         </header>
         <main style={{flex:1,overflowY:'auto',padding:'20px',display:'flex',flexDirection:'column'}}>
           <div style={{flex:1}}>
