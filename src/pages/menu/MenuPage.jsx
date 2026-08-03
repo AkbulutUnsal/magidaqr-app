@@ -66,7 +66,9 @@ export default function MenuPage() {
 
   // Masa / Oda (işletme modu + dil) — restaurant state'i tanımlandıktan SONRA
   const uLabel = unit(restaurant?.business_type, lang)
-  const ordering = restaurant?.plan !== 'basic'  // Temel plan → salt menü (sipariş/çağrı/sepet gizli)
+  const _rank = { start: 1, basic: 2, advanced: 3 }[restaurant?.plan] || 3  // bilinmiyorsa fail-open (açık)
+  const ordering = _rank >= 2   // Temel+ : sipariş, garson çağır, hesap, sepet
+  const loyalty  = _rank >= 3   // Gelişmiş: sadakat (puan/damga)
 
   useEffect(() => {
     async function load() {
@@ -317,7 +319,7 @@ export default function MenuPage() {
       <div id="menu-scroll-container" style={{ paddingBottom:140 }}>
 
         {/* ── SADAKAT BAR ── */}
-        {ordering && restaurant?.loyalty_enabled !== false && (
+        {loyalty && restaurant?.loyalty_enabled !== false && (
           <div style={{ padding:'12px 16px 0' }}>
             {customerId ? (
               <div style={{ display:'flex', alignItems:'center', gap:10, background:'#e8f5ee', border:`1px solid ${brand}`, borderRadius:14, padding:'10px 14px' }}>

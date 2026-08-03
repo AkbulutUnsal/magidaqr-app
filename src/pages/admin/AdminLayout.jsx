@@ -7,8 +7,12 @@ import AdminFooter from '../../components/AdminFooter'
 /* ── Plan-kilit (kendi içinde, dış dosyaya bağımlı değil) ──
    Mutfak/Garson/Bildirimler = Gelişmiş. Temel'de kilitli.
    plan okunamazsa fail-open (yanlış kilitleme yapmaz). */
-const PLAN_RANK = { basic: 1, advanced: 2 }
-const FEATURE_MIN = { kitchen: 'advanced', waiter: 'advanced', sms: 'advanced' }
+const PLAN_RANK = { start: 1, basic: 2, advanced: 3 }
+const FEATURE_MIN = {
+  orders: 'basic',       // Siparişler paneli → Temel+
+  kitchen: 'advanced', waiter: 'advanced', sms: 'advanced',
+  crm: 'advanced', stock: 'advanced', outlets: 'advanced',
+}
 function planAllows(plan, feature) {
   const need = FEATURE_MIN[feature]
   if (!need) return true
@@ -53,7 +57,7 @@ const NAV = [
   { section: null, items: [
     { to:'/admin',             label:'Dashboard',       Icon:HomeIcon,     end:true },
     { to:'/admin/analytics',   label:'Analitik',        Icon:ChartIcon },
-    { to:'/admin/orders',      label:'Siparişler',      Icon:ReceiptIcon, dot:true },
+    { to:'/admin/orders',      label:'Siparişler',      Icon:ReceiptIcon, dot:true, feature:'orders' },
     { to:'/admin/mutfak',      label:'Mutfak',          Icon:ChefIcon, dot:true, feature:'kitchen' },
     { to:'/admin/garson',      label:'Garson',          Icon:BellIcon, dot:true, feature:'waiter' },
     { to:'/admin/qr',          label:'QR Stüdyo',       Icon:QrIcon },
@@ -68,7 +72,7 @@ const NAV = [
     { to:'/admin/import',      label:'Import / Export',  Icon:UploadIcon },
   ]},
   { section:'YAPILANDIRMA', items: [
-    { to:'/admin/outlets',     label:'Outletler',        Icon:MapPinIcon },
+    { to:'/admin/outlets',     label:'Outletler',        Icon:MapPinIcon, feature:'outlets' },
     { to:'/admin/delivery',    label:'Paket Servisi',    Icon:PackageIcon },
     { to:'/admin/languages',   label:'Diller & Çeviriler',Icon:GlobeIcon },
     { to:'/admin/allergens',   label:'Alerjenler',       Icon:AlertIcon },
@@ -83,8 +87,8 @@ const NAV = [
   { section:'YÖNETİM', items: [
     { to:'/admin/tables',      label:'Masalar',          Icon:TableIcon },
     { to:'/admin/staff',       label:'Personel',         Icon:UsersIcon },
-    { to:'/admin/crm',         label:'Müşteriler',       Icon:UserIcon },
-    { to:'/admin/stok',        label:'Stok',             Icon:ArchiveIcon },
+    { to:'/admin/crm',         label:'Müşteriler',       Icon:UserIcon, feature:'crm' },
+    { to:'/admin/stok',        label:'Stok',             Icon:ArchiveIcon, feature:'stock' },
     { to:'/admin/bildirimler', label:'Bildirimler',      Icon:BellIcon, feature:'sms' },
     { to:'/admin/reports',     label:'Raporlar',         Icon:ReportIcon },
     { to:'/admin/settings',    label:'Ayarlar',          Icon:CogIcon },

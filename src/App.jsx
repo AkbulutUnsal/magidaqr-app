@@ -42,6 +42,7 @@ import SuperPlans     from './pages/super/SuperPlans'
 import SuperStats     from './pages/super/SuperStats'
 import LoginPage      from './pages/auth/LoginPage'
 import ProtectedRoute from './components/ProtectedRoute'
+import PlanGate from './components/PlanGate'
 
 export default function App() {
   return (
@@ -83,14 +84,14 @@ export default function App() {
           <Route path="reports"    element={<AdminReports />} />
           <Route path="settings"   element={<AdminSettings />} />
           <Route path="staff"      element={<AdminStaff />} />
-          <Route path="crm"        element={<AdminCRM />} />
-          <Route path="stok"       element={<AdminStock />} />
-          <Route path="bildirimler" element={<AdminNotifications />} />
+          <Route path="crm"        element={<PlanGate feature="crm"><AdminCRM /></PlanGate>} />
+          <Route path="stok"       element={<PlanGate feature="stock"><AdminStock /></PlanGate>} />
+          <Route path="bildirimler" element={<PlanGate feature="sms"><AdminNotifications /></PlanGate>} />
           <Route path="analytics"  element={<AdminAnalytics />} />
           <Route path="qr"         element={<AdminQR />} />
-          <Route path="orders"     element={<AdminOrders />} />
-          <Route path="mutfak"     element={<AdminKitchen />} />
-          <Route path="garson"     element={<AdminWaiter />} />
+          <Route path="orders"     element={<PlanGate feature="orders"><AdminOrders /></PlanGate>} />
+          <Route path="mutfak"     element={<PlanGate feature="kitchen"><AdminKitchen /></PlanGate>} />
+          <Route path="garson"     element={<PlanGate feature="waiter"><AdminWaiter /></PlanGate>} />
           <Route path="allergens"  element={<AdminAllergens />} />
           <Route path="campaigns"  element={<AdminCampaigns />} />
           <Route path="info-pages" element={<AdminInfoPages />} />
@@ -100,7 +101,7 @@ export default function App() {
           <Route path="hero-cards" element={<AdminHeroCards />} />
           <Route path="bulk-price" element={<AdminBulkPrice />} />
           <Route path="import"     element={<AdminImport />} />
-          <Route path="outlets"    element={<AdminOutlets />} />
+          <Route path="outlets"    element={<PlanGate feature="outlets"><AdminOutlets /></PlanGate>} />
           <Route path="delivery"   element={<AdminDelivery />} />
           <Route path="survey"     element={<AdminSurvey />} />
           <Route path="ai"         element={<AdminAI />} />

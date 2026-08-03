@@ -147,21 +147,33 @@ function InfoTab({ form, set }) {
   return (
     <>
       <Card title="İşletme Türü">
-        <div style={{ display: 'flex', gap: 10 }}>
-          {[['restaurant', '🍽️ Restoran / Kafe', 'Masa düzeni'], ['hotel', '🏨 Otel', 'Oda servisi']].map(([val, lbl, sub]) => {
-            const on = (form.business_type || 'restaurant') === val
-            return (
-              <button key={val} onClick={() => set('business_type', val)}
-                style={{ flex: 1, textAlign: 'left', padding: '13px 15px', borderRadius: 12, border: `1.5px solid ${on ? GREEN : BORDER}`, background: on ? '#e8f5ee' : '#fff', cursor: 'pointer' }}>
-                <p style={{ fontSize: 14, fontWeight: 800, color: on ? GREEN : '#333' }}>{lbl}</p>
-                <p style={{ fontSize: 11.5, color: MUTED, marginTop: 3 }}>{sub}</p>
-              </button>
-            )
-          })}
-        </div>
-        <p style={{ fontSize: 11.5, color: '#bbb', marginTop: 12, lineHeight: 1.6 }}>
-          Otel modunda panelde ve müşteri menüsünde "Masa" yerine "Oda" görünür. Değiştirip kaydettikten sonra sayfayı yenile.
-        </p>
+        {(form.plan || 'start') !== 'advanced' ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 12, padding: '13px 15px' }}>
+            <span style={{ fontSize: 20 }}>🔒</span>
+            <div>
+              <p style={{ fontSize: 13.5, fontWeight: 700, color: '#6b21a8' }}>Otel modu Gelişmiş pakete özel</p>
+              <p style={{ fontSize: 11.5, color: '#9333ea', marginTop: 2 }}>Oda servisi ve otel terminolojisi için Gelişmiş pakete yükselt.</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div style={{ display: 'flex', gap: 10 }}>
+              {[['restaurant', '🍽️ Restoran / Kafe', 'Masa düzeni'], ['hotel', '🏨 Otel', 'Oda servisi']].map(([val, lbl, sub]) => {
+                const on = (form.business_type || 'restaurant') === val
+                return (
+                  <button key={val} onClick={() => set('business_type', val)}
+                    style={{ flex: 1, textAlign: 'left', padding: '13px 15px', borderRadius: 12, border: `1.5px solid ${on ? GREEN : BORDER}`, background: on ? '#e8f5ee' : '#fff', cursor: 'pointer' }}>
+                    <p style={{ fontSize: 14, fontWeight: 800, color: on ? GREEN : '#333' }}>{lbl}</p>
+                    <p style={{ fontSize: 11.5, color: MUTED, marginTop: 3 }}>{sub}</p>
+                  </button>
+                )
+              })}
+            </div>
+            <p style={{ fontSize: 11.5, color: '#bbb', marginTop: 12, lineHeight: 1.6 }}>
+              Otel modunda panelde ve müşteri menüsünde "Masa" yerine "Oda" görünür. Değiştirip kaydettikten sonra sayfayı yenile.
+            </p>
+          </>
+        )}
       </Card>
 
       <Card title="İşletme Bilgileri">

@@ -1,28 +1,45 @@
-// magidaQR — Paket Tanımları
+// magidaQR — Paket Tanımları (3 kademe: Start / Temel / Gelişmiş)
 // Tek merkezden yönetilen plan/fiyat/özellik bilgisi
 
 export const PLANS = {
-  basic: {
-    key: 'basic',
-    name: 'Temel',
-    name_en: 'Basic',
-    price: 480,          // GEL / yıl
+  start: {
+    key: 'start',
+    name: 'Start',
+    name_en: 'Start',
+    price: 240,          // GEL / yıl (örnek — kendine göre ayarla)
     currency: '₾',
     period: 'yıl',
     color: '#1D9E75',
     bg: '#e8f5ee',
-    tagline: 'Tek restoran veya kafe için ideal',
+    tagline: 'Sadece dijital menü — en kolay başlangıç',
     maxOutlets: 1,
     features: [
-      'Tüm QR menü altyapısı',
-      'Sınırsız ürün & kategori',
+      'QR menü + sınırsız ürün/kategori',
+      'Fotoğraf, kalori, alerjen, beslenme etiketi',
       '4 dil desteği (KA/EN/TR/RU)',
-      'QR Stüdyo + masa yönetimi',
+      'QR Stüdyo',
       'Kampanyalar + Hero kartları',
-      'Alerjen & beslenme etiketleri',
+      'Misafir menüyü görür (siparişsiz)',
+    ],
+  },
+  basic: {
+    key: 'basic',
+    name: 'Temel',
+    name_en: 'Basic',
+    price: 480,
+    currency: '₾',
+    period: 'yıl',
+    color: '#2563eb',
+    bg: '#eff6ff',
+    tagline: 'Menü + sipariş — misafir garson çağırır, sipariş verir',
+    maxOutlets: 1,
+    features: [
+      'Start paketin tüm özellikleri',
+      'Misafir: garson çağır / hesap iste',
+      'Misafir: sepet + sipariş verme',
+      'Panelde sipariş görünümü',
       'Anket & geri bildirim',
       'Detaylı raporlar',
-      'Paket servisi',
     ],
   },
   advanced: {
@@ -34,24 +51,24 @@ export const PLANS = {
     period: 'yıl',
     color: '#8b5cf6',
     bg: '#f5f3ff',
-    tagline: 'Otel, zincir ve çoklu şube için',
+    tagline: 'Tam operasyon — otel, zincir ve çoklu şube için',
     maxOutlets: Infinity,
     features: [
       'Temel paketin tüm özellikleri',
-      'Garson & Mutfak paneli (canlı sipariş)',
+      'Mutfak Ekranı (KDS, kalem takibi)',
+      'Garson Paneli (personel ekranı)',
+      'Sadakat: puan & damga',
+      'SMS bildirimleri',
+      'Stok / envanter',
       'Otel modu (oda servisi)',
       'Sınırsız outlet (şube)',
-      'Outlet bazlı fiyatlandırma',
-      'Outlet bazlı branding',
-      'Outlet bazlı raporlar',
-      'Öncelikli destek',
     ],
   },
 }
 
 export const AI_ADDON = {
   name: 'AI Asistan',
-  price: 300,          // GEL / yıl
+  price: 300,
   currency: '₾',
   period: 'yıl',
   features: [
@@ -63,23 +80,24 @@ export const AI_ADDON = {
 }
 
 // ─────────────────────────────────────────────────────────
-// Özellik → gerekli minimum plan (KİLİT mantığı buradan okunur)
-// Sadece burada listelenen özellikler kısıtlıdır; listede olmayan = herkese açık.
+// Özellik → gerekli minimum paket (KİLİT mantığı buradan okunur)
+// AdminLayout / PlanGate ile birebir aynı olmalı.
 // ─────────────────────────────────────────────────────────
 export const FEATURE_MIN_PLAN = {
-  kitchen: 'advanced',   // Mutfak paneli → Temel'de KİLİTLİ
-  waiter: 'advanced',    // Garson paneli → Temel'de KİLİTLİ
-  hotelMode: 'advanced', // Otel modu → Gelişmiş
-  outletPricing: 'advanced',
-  outletBranding: 'advanced',
-  // orders: burada YOK → Siparişler her planda açık. Kısıtlamak istersen 'advanced' ekle.
+  orders: 'basic',        // Siparişler paneli + misafir sipariş → Temel+
+  kitchen: 'advanced',    // Mutfak Ekranı
+  waiter: 'advanced',     // Garson Paneli
+  sms: 'advanced',        // SMS bildirimleri
+  crm: 'advanced',        // Müşteriler / sadakat
+  stock: 'advanced',      // Stok
+  outlets: 'advanced',    // Çoklu outlet
+  hotelMode: 'advanced',  // Otel modu
 }
 
-const PLAN_RANK = { basic: 1, advanced: 2 }
+const PLAN_RANK = { start: 1, basic: 2, advanced: 3 }
 
-// Yardımcılar
 export function getPlan(key) {
-  return PLANS[key] || PLANS.basic
+  return PLANS[key] || PLANS.start
 }
 
 export function canAddOutlet(planKey, currentCount) {
@@ -91,9 +109,10 @@ export function hasAI(tenant) {
   return !!tenant?.ai_addon
 }
 
-// Bir plan, bir özelliğe erişebiliyor mu? (kilit için)
+// Bir paket, bir özelliğe erişebiliyor mu? (kilit için)
 export function planAllows(planKey, feature) {
   const need = FEATURE_MIN_PLAN[feature]
-  if (!need) return true // kısıtlı değil
+  if (!need) return true
+  if (!planKey) return true            // bilinmiyorsa fail-open
   return (PLAN_RANK[planKey] || 0) >= (PLAN_RANK[need] || 0)
 }
